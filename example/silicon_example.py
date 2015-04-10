@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
+# Kimmo Sääskilahti, 2015
 
 import numpy as np
 from randomAtomBox import atombox
 from lammps import lammps
-import SHCPostProc 
+from SHCPostProc import SHCPostProc 
 
 filePrefix='090415a'
 dataFile=filePrefix+'_Si.dat'
@@ -56,6 +58,26 @@ KijFilePrefix=filePrefix
 scaleFactor=1.602e-19/(1e-20)*1e4
 dt_md=2.5e-15
 
-pP=SHCPostProc.SHCPostProc(fileCompactVels,KijFilePrefix,dt_md=dt_md,scaleFactor=scaleFactor,LAMMPSDumpFile=fileVels,widthWin=widthWin,NChunks=20,chunkSize=50000,backupPrefix=filePrefix,LAMMPSRestartFile=restartFile,reCalcVels=True,reCalcFC=True)
+pP=SHCPostProc.SHCPostProc(fileCompactVels,KijFilePrefix,
+                           dt_md=dt_md,scaleFactor=scaleFactor,
+                           LAMMPSDumpFile=fileVels,
+                           widthWin=widthWin,
+                           NChunks=20,chunkSize=50000,
+                           backupPrefix=filePrefix,
+                           LAMMPSRestartFile=restartFile,
+                           reCalcVels=True,
+                           reCalcFC=True)
 
 pP.postProcess()
+
+# Pickling the post-processing object into file
+import cPickle as pickle
+with open(filePrefix+'_PP.pckl','w') as f:
+    pickle.dump(pP,f)
+  
+# Saving into numpy files 
+np.save(filePrefix+'_oms.npy',pP.oms_fft)
+np.save(filePrefix+'_SHC.npy',pP.SHC_smooth)
+
+# Saving the frequencies and heat currents to file
+np.savetxt(fileprefix+'_SHC.txt',np.column_stack((oms,pP.SHC_smooth)))

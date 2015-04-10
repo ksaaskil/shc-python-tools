@@ -12,3 +12,4 @@ TO-DO LIST:
 - Documentation for calcSHC.py
 - Documentation for the example
 - Preparation of visualization files
+- Documentation for fcCalc.py
