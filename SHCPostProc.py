@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
 # Kimmo Sääskilahti, 2015
-
 from __future__ import division
 import numpy as np
 
-# Class for post-processing
-# Positional arguments:
-# Compact velocity file produced with compactifyVels.cpp, written if does not exist
-# KijFilePrefix
-
-class SHCPostProc:
+class SHCPostProc(object):
     '''
+
+    TO-DO: Documentation for the initialization
+
     Post-process the data produced using LAMMPS Molecular Dynamics simulation to calculate the spectral heat current.
 
     The velocities are read from the "compact" file produced with the C++-code compactify_vels.cpp from a LAMMPS dump file. If the file does not exist, it is produced by calling the binary "compactify_vels", which must be found in the environment's $PATH.
 
-    Minimal usage:
+    Minimal usage in Python:
       pP=SHCPostProc(compactVelocityFile,KijFilePrefix) # See the documentation for arguments below
       pP.postProcess() # Calculate the heat current spectrum
 
     Public attributes:
-      SHC_smooth (numpy float array): The smoothened spectral heat current
+      SHC_smooth (numpy float array): The chunk-averaged, smoothened spectral heat current
+      SHC_smooth2 (numpy float array): Square of the chunk-averaged, smoothened spectral heat current, used for estimating the error from the between-chunk variance
+      SHC_average (numpy float array): The chunk-averaged spectral heat current without smoothing
+      SHC_error (numpy float array): The estimated error from the between-chunk variance, None if only one chunk evaluated
       oms_fft (numpy float array): The angular frequencies
     '''
 
@@ -158,7 +158,10 @@ class SHCPostProc:
 
         self.oms_fft=np.fft.rfftfreq(self.chunkSize,d=sampleTimestep)*2*np.pi
         Nfreqs=np.size(self.oms_fft)
+        # Initialize the spectral heat current arrays
         self.SHC_smooth=np.zeros(Nfreqs)
+        self.SHC_smooth2=np.zeros(Nfreqs)
+        self.SHC_average=np.zeros(Nfreqs)
 
         exitFlag=False
 
@@ -170,11 +173,13 @@ class SHCPostProc:
             # Prepare for exit if the read size does not match the chunk size
             if np.size(velArray)==0:
                 print "Finished the file, exiting."
+                NChunks=k-1
                 break
             if np.size(velArray)!=self.chunkSize*NDOF:
                 # Reaching the end of file           
                 self.chunkSize=int(np.size(velArray)/NDOF)             
-                if k>0:
+                if k>0: # Not the first chunk
+                    NChunks=k-1
                     break
                 else:
                     exitFlag=True
@@ -217,19 +222,36 @@ class SHCPostProc:
             daniellWindow=np.ones(np.ceil(self.widthWin*2*np.pi/(self.oms_fft[1]-self.oms_fft[0])))
             daniellWindow/=np.sum(daniellWindow)
 
-            # Smooth the value
+            SHC_orig=SHC.copy()
+            # Smooth the value           
             SHC=np.convolve(SHC,daniellWindow,'same')
 
-            if not exitFlag:
+            if not exitFlag: # If Nfreqs has changed, the running averaging cannot be performed
                 self.SHC_smooth=(k*self.SHC_smooth+SHC)/(k+1.0)
+                # The square
+                self.SHC_smooth2=(k*self.SHC_smooth2+SHC**2)/(k+1.0)
+                # The non-smoothened average
+                self.SHC_average=(k*self.SHC_average+SHC_orig)/(k+1.0)
                 if self.backupPrefix is not None:
                     np.save(self.backupPrefix+'_backup_oms.npy',self.oms_fft)
                     np.save(self.backupPrefix+'_backup_SHC.npy',self.SHC_smooth)
-            elif exitFlag and k==0: # First chunk
+            elif exitFlag and k==0: # First chunk and new chunk size, needs re-initializing the vectors as Nfreqs may have changed
                 self.SHC_smooth=SHC
+                self.SHC_smooth2=SHC
+                NChunks=1
                 break
-            else: # Small chunk but not the first one, exit
+            else: # This should never be reached
+                assert False, "SHCPostProc should not reach here (exitFlag=True and k>0)."
                 break
+
+        # Calculate the error estimate at each frequency from the between-chunk variances
+        if NChunks>1:
+            samplevar=(NChunks/(NChunks-1.0))*(self.SHC_smooth2-self.SHC_smooth**2)
+            self.SHC_error=np.sqrt(samplevar)/np.sqrt(NChunks)
+        else:
+            self.SHC_error=None
+
+            
 
 if __name__=="__main__":
     
@@ -252,12 +274,20 @@ if __name__=="__main__":
     # Post-process
     pP.postProcess() # All variables will be contained in the object pP
 
+    # Exporting of the post-processing object as a pickle file
     import cPickle as pickle
     with open(fileprefix+'_PP.pckl','w') as f:
         pickle.dump(pP,f)
     
+    # Saving into numpy files
     np.save(fileprefix+'_oms.npy',pP.oms_fft)
     np.save(fileprefix+'_SHC.npy',pP.SHC_smooth)
+
+    # Saving to file
+    np.savetxt(fileprefix+'_SHC.txt',np.column_stack((oms,pP.SHC_smooth)))
+
+    # Tar the relevant files to folder
+    
 
     # Plotting if available
     # import matplotlib.pylab as plt

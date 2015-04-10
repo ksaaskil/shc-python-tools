@@ -1,0 +1,9 @@
+*.pyc
+*.py~
+*.dat
+*.xyz
+*.log
+*.lmp~
+*.restart
+*.lammps
+*.compact
