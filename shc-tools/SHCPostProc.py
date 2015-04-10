@@ -238,6 +238,7 @@ class SHCPostProc(object):
             elif exitFlag and k==0: # First chunk and new chunk size, needs re-initializing the vectors as Nfreqs may have changed
                 self.SHC_smooth=SHC
                 self.SHC_smooth2=SHC
+                self.SHC_average=SHC_orig
                 NChunks=1
                 break
             else: # This should never be reached

@@ -1,0 +1,101 @@
+
+# variable filename string '090415a'
+# variable data_file string ${filename}_Si.dat # Where to read the structure
+# variable restartfile string ${filename}.quenched.restart
+
+dimension 3
+log ${filename}.log
+boundary p p p
+units metal
+atom_style atomic
+
+pair_style sw
+read_data ${datafile}
+pair_coeff * * Si_vbwm.sw Si  
+
+min_style cg
+min_modify line quadratic
+thermo 100
+
+minimize 0 1.0e-1 1000 1000
+write_restart ${restartfile}
+# quit
+#undump minim_coords
+
+variable seed1 equal 3423435
+variable seed2 equal 23422327
+variable seed3 equal 8760859
+
+variable Tquench equal 2400
+variable Tfinal equal 300
+variable Tdamp equal 0.5
+variable Pquench equal 1
+variable Pdamp equal 0.5
+
+variable steps_heating equal 500000
+variable steps_quench equal 1000000
+variable steps_cooled equal 500000
+
+fix NVE all nve
+timestep 0.0025
+thermo 1000
+
+velocity all create ${Tquench} 4928459 dist gaussian
+
+thermo_style custom step temp etotal cpu cpuremain
+
+fix NVT0 all langevin ${Tquench} ${Tquench} ${Tdamp} ${seed1} # zero yes
+# fix NPT0 all npt temp 0.1 ${Tquench} ${Tdamp} iso 0.1 ${Pquench} ${Pdamp}
+# fix NPH0 all nph aniso 1 1 ${Pdamp}
+# fix LANGEVIN all langevin 
+dump quench_coords all xyz 1000 ${filename}_traj_quench.xyz
+dump_modify quench_coords element Si
+
+run ${steps_heating}
+#unfix NPH0
+unfix NVT0
+write_restart ${filename}.heated.restart
+#fix NPT1 all npt temp ${Tquench} ${Tquench} ${Tdamp} iso ${Pquench} ${Pquench} ${Pdamp}
+fix NVT1 all langevin ${Tquench} ${Tfinal} ${Tdamp} ${seed2} 
+run ${steps_quench}
+#undump quench_coords
+unfix NVT1
+write_restart ${filename}.cooled.restart
+
+unfix NVE
+fix NPH2 all nph iso 0 0 ${Pdamp}
+fix NVT2 all langevin ${Tfinal} ${Tfinal} ${Tdamp} ${seed3} 
+
+#dump vels all custom 50 ${filename}.vels.SiO2.dat id type vx vy vz
+#dump_modify vels format "%d %d %.8g %.8g %.8g"
+#dump_modify vels sort id
+#compute myRDF all rdf 50
+#fix 1 all ave/time 100 1 100 c_myRDF file ${filename}.tmp.rdf mode vector
+#dump quench_coords all xyz 25 ${filename}_traj2_quench.xyz
+restart 1000000 ${filename}.*.quench.restart
+run ${steps_cooled}
+#unfix NPT2
+# undump quench_coords
+minimize 0 1.0e-3 1000 1000
+
+dump coords all xyz 1 ${filename}_quenched_coords.xyz
+dump_modify coords sort id # Important for SED calculation
+run 0
+undump coords
+write_restart ${restartfile}
+# quit
+
+variable v1 equal xlo
+variable v2 equal xhi
+variable v3 equal ylo
+variable v4 equal yhi
+variable v5 equal zlo
+variable v6 equal zhi
+print "The system boundaries are "
+print "${v1} ${v2}"
+print "${v3} ${v4}"
+print "${v5} ${v6}"
+
+quit
+
+

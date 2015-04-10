@@ -2,9 +2,10 @@
 Python tools for calculating the spectral heat current from the data produced by non-equilibrium molecular dynamics simulation using LAMMPS (http://lammps.sandia.gov) software.
 
 shc-tools/SHCPostProc.py: Class for performing the post-processing
-calcFC.py: Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
 
-shc-tools/calcSHC.py: Script demonstrating how the post-processing class is used and how the data could be saved to file
+shc-tools/calcFC.py: Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
+
+calcSHC.py: Script demonstrating how the post-processing class is used and how the data could be saved to file
 
 shc-tools/compactify_vels.cpp: C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file.
 

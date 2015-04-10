@@ -1,0 +1,185 @@
+# variable filename string 020215a
+# variable restartfile string ${filename}.quenched.restart
+# variable restartfile string 020215a.quenched.restart
+
+read_restart ${restartfile} remap
+
+variable T equal 30
+#variable dT equal $T/3
+variable dT equal 10
+variable TL equal $T+${dT}/2
+variable TR equal $T-${dT}/2
+
+log ${filename}.log
+change_box all boundary f p p
+variable Tdamp equal 1.0 # In picoseconds
+
+# atom_modify sort 0 0.0
+pair_style sw
+pair_coeff * * Si_vbwm.sw Si
+timestep 0.0025 # Used in ?
+
+variable Lfixed equal 5.0
+variable Lbath equal 50.0 #
+variable Lhelp equal xhi-${Lfixed}
+variable Lhelp2 equal xhi-${Lbath}
+
+variable dmid equal 3
+variable xmid equal (xhi+xlo)/2.0
+variable xmidlo equal ${xmid}-${dmid}
+variable xmidhi equal ${xmid}+${dmid}
+
+variable steps_equil equal 500000
+variable steps_steady equal 1000000
+variable steps_simu equal 1000000
+
+region 1 block INF ${Lfixed} INF INF INF INF
+region 2 block ${Lhelp} INF INF INF INF INF
+region 3 block INF ${Lbath} INF INF INF INF
+region 4 block ${Lhelp2} INF INF INF INF INF
+
+region left block ${xmidlo} ${xmid} INF INF INF INF
+region right block ${xmid} ${xmidhi} INF INF INF INF
+
+group fixedL region 1
+group fixedR region 2
+group fixed union fixedL fixedR
+
+group hot region 3
+group hot subtract hot fixedL
+group cold region 4
+group cold subtract cold fixedR
+
+group interface_left region left
+group interface_right region right
+group interface union interface_left interface_right
+
+group mobile subtract all fixed
+
+variable xmidL equal (xlo+xhi)/4
+variable xmidR equal 3*(xlo+xhi)/4
+
+variable xmidLlo equal ${xmidL}-${dmid}
+variable xmidLhi equal ${xmidL}+${dmid}
+variable xmidRlo equal ${xmidR}-${dmid}
+variable xmidRhi equal ${xmidR}+${dmid}
+
+region 5 block ${xmidLlo} ${xmidLhi} INF INF INF INF
+region 6 block ${xmidRlo} ${xmidRhi} INF INF INF INF
+group interfaceL region 5
+group interfaceR region 6
+
+
+compute MSD all msd
+thermo_style custom step temp etotal c_MSD[4] cpu cpuremain
+
+velocity all create ${T} 23423424 dist gaussian mom yes
+velocity fixed set 0 0 0
+
+variable Tis atom ${TL}+x/xhi*(${TR}-${TL})
+
+# FIXES
+thermo 100
+fix NVE mobile nve
+fix NVT mobile langevin v_Tis 1.0 ${Tdamp} 9348734 # zero yes
+
+#dump fixed_coords fixed xyz 10 ${filename}.fixed.xyz
+run ${steps_equil}
+#undump fixed_coords
+
+
+# dump start_coords all xyz 50 ${filename}_traj_start.xyz
+# run 2000
+# undump start_coords
+
+write_restart ${filename}.equil.restart
+# quit
+# Write the restart data to file
+
+unfix NVT
+
+# dump equil_coords all xyz 10 ${filename}_traj.xyz
+# Check the energy conservation
+thermo 10
+# run 1000
+# undump equil_coords
+thermo 100
+# Hot bath
+fix HOT hot langevin ${TL} ${TL} ${Tdamp} 12223 tally yes # gjf yes
+# Cold bath
+fix COLD cold langevin ${TR} ${TR} ${Tdamp} 2276822 tally yes # gjf yes
+
+dump simu_coords all xyz 20000 ${filename}_simu.xyz
+
+compute KE all ke/atom
+
+variable convert equal 2.0/3.0*1.602e-19/1.38e-23
+
+variable Ti atom c_KE*${convert}
+variable Ti2 atom v_Ti*v_Ti
+
+fix ave_KE_start all ave/spatial 100 500 50000 x lower 5 v_Ti v_Ti2 units box ave one file ${filename}.Ti_start.dat title1 "Atomic temperatures"
+
+fix aveinput_start hot ave/time 1 1 100 f_HOT ave one file ${filename}.aveinput_hot_start.dat
+fix aveinput_cold_start cold ave/time 1 1 100 f_COLD ave one file ${filename}.aveinput_cold_start.dat
+
+# Wait for steady state
+run ${steps_steady}
+unfix ave_KE_start
+unfix aveinput_start
+unfix aveinput_cold_start
+# quit
+
+write_restart ${filename}.steadystate.restart
+# quit
+fix aveinput hot ave/time 1 1 100 f_HOT ave one file ${filename}.aveinput_hot.dat
+fix aveinput_cold cold ave/time 1 1 100 f_COLD ave one file ${filename}.aveinput_cold.dat
+
+fix ave_KE all ave/spatial 100 1 100 x lower 5 v_Ti v_Ti2 units box ave running file ${filename}.Ti.dat overwrite title1 "Kinetic energies"
+
+# undump equil_coords
+
+# ALL COMPUTES
+
+thermo 10000
+variable dt_dump equal 5
+# dump pairs interface local ${dt_dump} forces.dat index c_atomids[1] c_atomids[2] c_atomids[3] c_atomids[4] c_forces[1] c_forces[2] c_forces[3]
+dump vels interface custom ${dt_dump} ${filename}.vels.dat id type vx vy vz
+dump_modify vels format "%d %d %.8g %.8g %.8g"
+dump_modify vels sort id
+
+dump pos interface custom 1000 ${filename}.pos.dat id type x y z
+dump_modify pos format "%d %d %.8g %.8g %.8g"
+dump_modify pos sort id
+
+#dump velsL interfaceL custom ${dt_dump} ${filename}.velsL.dat id type vx vy vz
+#dump_modify velsL format "%d %d %.8g %.8g %.8g"
+#dump_modify velsL sort id
+
+#dump velsR interfaceR custom ${dt_dump} ${filename}.velsR.dat id type vx vy vz
+#dump_modify velsR format "%d %d %.8g %.8g %.8g"
+#dump_modify velsR sort id
+# thermo_style custom step v_ke
+# fix printtaus all print 10 "ke=${ke}"
+
+#dump_modify vels buffer no
+#dump_modify velsL buffer no
+#dump_modify velsR buffer no
+restart 10000000 ${filename}.*.restart
+
+run ${steps_simu}
+
+undump vels
+undump pos
+
+write_restart ${filename}.end.restart
+
+
+#dump final_coords all xyz 50 ${filename}_traj_final.xyz
+#run 10000
+
+quit
+
+undump vels
+#undump velsL
+#undump velsR

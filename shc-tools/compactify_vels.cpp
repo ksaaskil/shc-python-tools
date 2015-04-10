@@ -1,5 +1,20 @@
-# -*- coding: utf-8 -*-
-# Kimmo Sääskilahti, 2015
+// -*- coding: utf-8 -*-
+// Kimmo Sääskilahti, 2015
+
+// Usage: compactify_vels lammps_dump_file [output_file]
+
+/* 
+Program writes the velocity data file produced by LAMMPS 
+in a more compact, ravelled form without the additional data 
+appearing for each time step in the dump file. The assumed commands used for dumping the velocities from LAMMPS is as follows:
+
+dump vels interface custom dt_dump filename.vels.dat id type vx vy vz
+dump_modify vels format "%d %d %.8g %.8g %.8g"
+dump_modify vels sort id
+
+"interface" is the group of atoms at the interface where SHC is calculated
+"dt_dump" is the sampling time step (integer) specifying the maximum frequency
+*/
 
 #include <stdio.h>
 #include <iostream>
