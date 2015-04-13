@@ -95,10 +95,10 @@ class SHCPostProc(object):
            # hstep=0.001
            fc.fcCalc(self.hstep)
            fc.writeToFile()
-           self.Kij=fc.Kij
+           self.Kij=fc.Kij # Reference
            print "Size of the Kij file is (3*%d)x(3*%d)." % (np.size(self.Kij,0)/3,np.size(self.Kij,1)/3)
-           self.ids_L=fc.ids_L
-           self.ids_R=fc.ids_R
+           self.ids_L=fc.ids_L # Reference
+           self.ids_R=fc.ids_R # Reference
            self.NL=len(self.ids_L)
            print "len(ids_L)=%d" % (self.NL)
            self.NR=len(self.ids_R)
@@ -142,7 +142,7 @@ class SHCPostProc(object):
         s=f.readline()
         print s
         s=s.split()
-        sampleTimestep=int(s[1])*self.dt_md
+        self.sampleTimestep=int(s[1])*self.dt_md
 
         s=f.readline() # Atom ids:
         print s
@@ -156,7 +156,7 @@ class SHCPostProc(object):
         # Total number of degrees of freedom
         NDOF=3*(self.NL+self.NR)
 
-        self.oms_fft=np.fft.rfftfreq(self.chunkSize,d=sampleTimestep)*2*np.pi
+        self.oms_fft=np.fft.rfftfreq(self.chunkSize,d=self.sampleTimestep)*2*np.pi
         Nfreqs=np.size(self.oms_fft)
         # Initialize the spectral heat current arrays
         self.SHC_smooth=np.zeros(Nfreqs)
@@ -168,32 +168,32 @@ class SHCPostProc(object):
         for k in np.arange(self.NChunks): # Start the iteration over chunks
 #        for k in range(0,2): # Start the iteration over chunks
             print "Chunk %d/%d." % (k+1,self.NChunks)
-            # Read the velocitites
+            # Read a chunk of velocitites
             velArray=np.fromfile(f,dtype=np.dtype('f8'),count=self.chunkSize*NDOF,sep=" ")
             # Prepare for exit if the read size does not match the chunk size
             if np.size(velArray)==0:
                 print "Finished the file, exiting."
-                NChunks=k-1
+                self.NChunks=k-1
                 break
-            if np.size(velArray)!=self.chunkSize*NDOF:
+            elif np.size(velArray)!=self.chunkSize*NDOF:
                 # Reaching the end of file           
                 self.chunkSize=int(np.size(velArray)/NDOF)             
                 if k>0: # Not the first chunk
-                    NChunks=k-1
+                    self.NChunks=k-1
                     break
                 else:
                     exitFlag=True
-                    self.oms_fft=np.fft.rfftfreq(self.chunkSize,d=sampleTimestep)*2*np.pi
+                    self.oms_fft=np.fft.rfftfreq(self.chunkSize,d=self.sampleTimestep)*2*np.pi
                     Nfreqs=np.size(self.oms_fft)
                     print "Changing chunk size to "+str(int(np.size(velArray)/NDOF))+"!"
                     
  
             # Reshape the array so that each row corresponds to different degree of freedom (e.g. particle 1, direction x etc.)
-            velArray=np.reshape(velArray,(NDOF,self.chunkSize),'F')
+            velArray=np.reshape(velArray,(NDOF,self.chunkSize),order='F')
             
             # FFT with respect to the second axis (NOTE THE USE OF RFFT)
             velFFT=np.fft.rfft(velArray,axis=1)
-            # print type(velFFT[0,0])
+            velFFT*=self.sampleTimestep
             
             velsL=np.zeros((3*self.NL,Nfreqs),dtype=np.complex128)
             velsR=np.zeros((3*self.NR,Nfreqs),dtype=np.complex128)
@@ -211,10 +211,9 @@ class SHCPostProc(object):
 
             for ki in range(1,Nfreqs): # Skip the first one with zero frequency
                 SHC[ki]=-2.0*np.imag(np.dot(velsL[:,ki],np.dot(-self.Kij,np.conj(velsR[:,ki]))))/self.oms_fft[ki]
-            # SHC[0]=0.0 
 
             # Normalize correctly
-            SHC/=(self.chunkSize*sampleTimestep)
+            SHC/=(self.chunkSize*self.sampleTimestep)
 
             # Change units             
             SHC*=self.scaleFactor
@@ -237,18 +236,18 @@ class SHCPostProc(object):
                     np.save(self.backupPrefix+'_backup_SHC.npy',self.SHC_smooth)
             elif exitFlag and k==0: # First chunk and new chunk size, needs re-initializing the vectors as Nfreqs may have changed
                 self.SHC_smooth=SHC
-                self.SHC_smooth2=SHC
+                self.SHC_smooth2=SHC**2
                 self.SHC_average=SHC_orig
-                NChunks=1
+                self.NChunks=1
                 break
             else: # This should never be reached
                 assert False, "SHCPostProc should not reach here (exitFlag=True and k>0)."
                 break
 
         # Calculate the error estimate at each frequency from the between-chunk variances
-        if NChunks>1:
-            samplevar=(NChunks/(NChunks-1.0))*(self.SHC_smooth2-self.SHC_smooth**2)
-            self.SHC_error=np.sqrt(samplevar)/np.sqrt(NChunks)
+        if self.NChunks>1:
+            samplevar=(self.NChunks/(self.NChunks-1.0))*(self.SHC_smooth2-self.SHC_smooth**2)
+            self.SHC_error=np.sqrt(samplevar)/np.sqrt(self.NChunks)
         else:
             self.SHC_error=None
 
