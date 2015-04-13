@@ -1,11 +1,19 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Kimmo Sääskilahti, 2015
 from __future__ import division
 import numpy as np
-
 from SHCPostProc import SHCPostProc
 
 fileprefix='270315a'
+outputFolder='DATA/'+fileprefix+'_tar'
+
+# Create the data folder
+from subprocess import call
+command=["mkdir","-p",outputFolder]
+print " ".join(command)
+call(command)
+
 dt_md=2.5e-15 # Timestep used in MD, affects the frequency grid
 widthWin=0.5e12 # Width of the Daniell smoothing window in Hz
 # The velocity dump file from LAMMPS
@@ -20,7 +28,14 @@ restartFile=KijFilePrefix+'.quenched.restart'
 scaleFactor=1.602e-19/(1e-20)*1e4
 
 # Prepare the post-processor
-pP=SHCPostProc(fileCompactVels,KijFilePrefix,dt_md=dt_md,scaleFactor=scaleFactor,LAMMPSDumpFile=fileVels,widthWin=widthWin,NChunks=20,chunkSize=50000,backupPrefix=fileprefix)
+pP=SHCPostProc(fileCompactVels,KijFilePrefix,
+               dt_md=dt_md,scaleFactor=scaleFactor,
+               LAMMPSDumpFile=fileVels,widthWin=widthWin,
+               LAMMPSRestartFile='270115a.quenched.restart',
+               NChunks=200,chunkSize=50000,
+               backupPrefix=fileprefix,
+               reCalcVels=False,
+               reCalcFC=False)
 # Post-process
 pP.postProcess() # All variables will be contained in the object pP
 
@@ -28,18 +43,20 @@ pP.postProcess() # All variables will be contained in the object pP
 
 # Pickling the post-processing instance
 import cPickle as pickle
-with open(fileprefix+'_PP.pckl','w') as f:
+with open(outputFolder+'/'+fileprefix+'_PP.pckl','w') as f:
     pickle.dump(pP,f)
     
 # Saving into numpy files
-np.save(fileprefix+'_oms.npy',pP.oms_fft)
-np.save(fileprefix+'_SHC.npy',pP.SHC_smooth)
+np.save(outputFolder+'/'+fileprefix+'_oms.npy',pP.oms_fft)
+np.save(outputFolder+'/'+fileprefix+'_SHC.npy',pP.SHC_smooth)
 
 # Saving to file
-np.savetxt(fileprefix+'_SHC.txt',np.column_stack((oms,pP.SHC_smooth)))
+print "Saving to file "+outputFolder+'/'+fileprefix+'_SHC.txt'
+np.savetxt(outputFolder+'/'+fileprefix+'_SHC.txt',np.column_stack((pP.oms_fft,pP.SHC_smooth)))
 
-# Tar the relevant files to folder
-    
+command=["tar","-czvf",fileprefix+'_tar.tgz',outputFolder]
+print " ".join(command)
+call(command)
 
 # Plotting if available
 # import matplotlib.pylab as plt
