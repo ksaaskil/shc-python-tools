@@ -5,9 +5,6 @@ import numpy as np
 
 class SHCPostProc(object):
     '''
-
-    TO-DO: Documentation for the initialization
-
     Post-process the data produced using LAMMPS Molecular Dynamics simulation to calculate the spectral heat current.
 
     The velocities are read from the "compact" file produced with the C++-code compactify_vels.cpp from a LAMMPS dump file. If the file does not exist, it is produced by calling the binary "compactify_vels", which must be found in the environment's $PATH.
@@ -21,27 +18,35 @@ class SHCPostProc(object):
       SHC_smooth2 (numpy float array): Square of the chunk-averaged, smoothened spectral heat current, used for estimating the error from the between-chunk variance
       SHC_average (numpy float array): The chunk-averaged spectral heat current without smoothing
       SHC_error (numpy float array): The estimated error from the between-chunk variance, None if only one chunk evaluated
-      oms_fft (numpy float array): The angular frequencies
+      oms_fft (numpy float array): The angular frequency grid (in the units of Hz if dt_md is given in the units of seconds in the initialization)
     '''
 
     def __init__(self,compactVelocityFile,KijFilePrefix,reCalcVels=False,reCalcFC=False,**args):
         '''
         Positional arguments:
-          compactVelocityFile (str): The file where the velocities are read. Produced using the binary compactify_vels if the file does not exist. In this case, you must also supply the keyword argument LAMMPSDumpFile containing the velocities produced using LAMMPS.
-          KijFilePrefix (str): The prefix used in trying to find the force constant matrix file KijFilePrefix.Kij.npy. If the file does not exist, the force constant calculator fcCalc is called using the keyword argument LAMMPSRestartFile (which must be supplied in this case). 
+           compactVelocityFile (str): The file where the velocities are read. Produced using the binary compactify_vels if the file does not exist. In this case, you must also supply the keyword argument LAMMPSDumpFile containing the velocities produced using LAMMPS.
+           KijFilePrefix (str): The prefix used in trying to find the force constant matrix file KijFilePrefix.Kij.npy. If the file does not exist, the force constant calculator fcCalc is called using the keyword argument LAMMPSRestartFile (which must be supplied in this case). 
 
         Keyword arguments:
 
+           dt_md (float): Timestep used in the NEMD simulation (seconds), used for inferring the sampling timestep and the frequency grid (default 1.0)
+           scaleFactor (float): Multiply the spectral heat current by this factor to convert to correct units (default 1.0)
+           LAMMPSDumpFile (str): Use this velocity dump file produced by LAMMPS for post-processing, needed only if the compact velocity file cannot be found (default None)
+           LAMMPSRestartFile (str): Use this restart file for calculating the force constants if the force constant file cannot be found (default None)
+           widthWin (float): Use this width for the smoothing window (Hz) (default 1.0)
+           chunkSize (int): Used chunk size for reading the velocities, affects the frequency grid (default 50000). Performing FFT is faster if chunkSize is a power of 2.
+           NChunks (int): The number of chunks to be read, this should be set to a sufficiently large value if the whole velocity file should be read (default 20)
+           backupPrefix (str): Prefix for pickling the post-processing object to a file after the read of each chunk (default None)
+           hstep (float): The displacement used in calculating the force constants by the finite-displacement method (default 0.001)
+           reCalcVels (boolean): If set to True, the re-creation of the compact velocity file is enforced (default False)
+           reCalcFC (boolean): If set to True, the force constants are re-calculated (default False)
         '''
+
+        # Attributes set by positional arguments
         self.compactVelocityFile=compactVelocityFile
         self.KijFilePrefix=KijFilePrefix
-        self.Kij=None
-        self.ids_L=None
-        self.ids_R=None
-        self.NL=None
-        self.NR=None
-        self.SHC_smooth=None
-        self.oms_fft=None
+
+        # Attributes set by keyword parameters below
         self.dt_md=1.0 # Default
         self.scaleFactor=1.0 # Default
         self.LAMMPSDumpFile=None
@@ -53,6 +58,18 @@ class SHCPostProc(object):
         self.hstep=0.001
         self.reCalcVels=reCalcVels
         self.reCalcFC=reCalcFC
+
+        # Other attributes
+        self.Kij=None
+        self.ids_L=None
+        self.ids_R=None
+        self.NL=None
+        self.NR=None
+        self.SHC_smooth=None
+        self.SHC_smooth2=None
+        self.SHC_average=None
+        self.SHC_error=None
+        self.oms_fft=None
 
         for key,value in args.items():
             if not hasattr(self,key):
@@ -125,14 +142,18 @@ class SHCPostProc(object):
         print "Running "+" ".join(command)
         call(command)
 
+    def _smoothen(self,df,func,widthWin):
+        Nwindow=np.ceil(widthWin/df)
+        daniellWindow=np.ones(Nwindow)/Nwindow
+        # daniellWindow/=np.sum(daniellWindow)
+        # Smooth the value           
+        smooth=np.convolve(func,daniellWindow,'same')
+        return smooth
+
     def postProcess(self):
-        # dt_md=self.dt_md
-        # widthWin=self.widthWin
-        fileCompactVels=self.compactVelocityFile
-
-
-        print "Reading the compact velocity file "+fileCompactVels+"."
-        f=open(fileCompactVels,'r')
+        
+        print "Reading the compact velocity file "+self.compactVelocityFile+"."
+        f=open(self.compactVelocityFile,'r')
         s=f.readline().split()
         NAtoms=int(s[1])
         #print NAtoms, self.NL, self.NR
@@ -218,12 +239,14 @@ class SHCPostProc(object):
             # Change units             
             SHC*=self.scaleFactor
             
-            daniellWindow=np.ones(np.ceil(self.widthWin*2*np.pi/(self.oms_fft[1]-self.oms_fft[0])))
-            daniellWindow/=np.sum(daniellWindow)
+            # daniellWindow=np.ones(np.ceil(self.widthWin*2*np.pi/(self.oms_fft[1]-self.oms_fft[0])))
+            # daniellWindow/=np.sum(daniellWindow)
 
             SHC_orig=SHC.copy()
             # Smooth the value           
-            SHC=np.convolve(SHC,daniellWindow,'same')
+            # SHC=np.convolve(SHC,daniellWindow,'same')
+            df=(self.oms_fft[1]-self.oms_fft[0])/(2*np.pi)
+            SHC=self._smoothen(df,SHC,self.widthWin)
 
             if not exitFlag: # If Nfreqs has changed, the running averaging cannot be performed
                 self.SHC_smooth=(k*self.SHC_smooth+SHC)/(k+1.0)
@@ -234,6 +257,9 @@ class SHCPostProc(object):
                 if self.backupPrefix is not None:
                     np.save(self.backupPrefix+'_backup_oms.npy',self.oms_fft)
                     np.save(self.backupPrefix+'_backup_SHC.npy',self.SHC_smooth)
+                    import cPickle as pickle
+                    with open(self.backupPrefix+'_run_PP.pckl','w') as pf:
+                        pickle.dump(self,pf)
             elif exitFlag and k==0: # First chunk and new chunk size, needs re-initializing the vectors as Nfreqs may have changed
                 self.SHC_smooth=SHC
                 self.SHC_smooth2=SHC**2
@@ -246,10 +272,12 @@ class SHCPostProc(object):
 
         # Calculate the error estimate at each frequency from the between-chunk variances
         if self.NChunks>1:
+            print "Calculating error estimates."
             samplevar=(self.NChunks/(self.NChunks-1.0))*(self.SHC_smooth2-self.SHC_smooth**2)
             self.SHC_error=np.sqrt(samplevar)/np.sqrt(self.NChunks)
         else:
             self.SHC_error=None
 
-            
+        print "Finished post-processing."
+
 
