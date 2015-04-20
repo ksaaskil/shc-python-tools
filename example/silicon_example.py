@@ -8,7 +8,7 @@ from SHCPostProc import SHCPostProc
 
 def main(filePrefix):
 
-    filePrefix='090415a'
+    # filePrefix='090415a'
     dataFile=filePrefix+'_Si.dat'
     restartFile=filePrefix+'.quenched.restart'
     length=200
