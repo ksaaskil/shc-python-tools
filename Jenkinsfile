@@ -6,7 +6,7 @@ pipeline {
 
   }
   stages {
-    stage('') {
+    stage('Create UUID') {
       steps {
         sh 'python -c "import uuid;print(uuid.uuid4());"'
       }
