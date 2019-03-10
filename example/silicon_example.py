@@ -60,11 +60,14 @@ def main(filePrefix):
     scaleFactor=1.602e-19/(1e-20)*1e4
     dt_md=2.5e-15
 
-    pP=SHCPostProc.SHCPostProc(fileCompactVels,KijFilePrefix,
-                               dt_md=dt_md,scaleFactor=scaleFactor,
+    pP=SHCPostProc.SHCPostProc(fileCompactVels,
+                               KijFilePrefix,
+                               dt_md=dt_md,
+                               scaleFactor=scaleFactor,
                                LAMMPSDumpFile=fileVels,
                                widthWin=widthWin,
-                               NChunks=20,chunkSize=50000,
+                               NChunks=20,
+                               chunkSize=50000,
                                backupPrefix=filePrefix,
                                LAMMPSRestartFile=restartFile,
                                reCalcVels=True,

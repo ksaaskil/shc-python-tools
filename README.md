@@ -17,6 +17,27 @@ in the [shc-tools](./shc-tools) folder. It contains:
 
 In addition, the root directory contains the script [calcSHC.py](./calcSHC.py) demonstrating how the post-processing class is used and how the data could be saved to file.
 
+## Usage
+
+Include `shc-tools` in your `PYTHONPATH` and do
+
+```python
+from SHCPostProc import SHCPostProc
+import numpy as np
+
+postprocessor = SHCPostProc.SHCPostProc(*args, **kwargs)
+postprocessor.postProcess()
+
+# Save frequencies and smoothened spectral heat currents as NumPy files
+np.save('angular_frequencies.npy', postprocessor.oms_fft)
+np.save('heat_currents.npy', postprocessor.SHC_smooth)
+
+# Save the frequencies and smoothened spectral heat currents to text file
+np.savetxt('frequencies_and_currents.txt', np.column_stack((oms, postprocessor.SHC_smooth)))
+```
+
+See the example below for the arguments required by `SHCPostProc`.
+
 ## Example
 
 Folder [example](./example) contains a self-contained example for calculating the spectral heat current flowing across a slab of amorphous Si. The script to be run is called `silicon_example.py`. It performs the following steps:
@@ -26,7 +47,13 @@ Folder [example](./example) contains a self-contained example for calculating th
 1. call LAMMPS to perform the actual NEMD calculation for a-Si using `amorphous_interface.lmp`, and
 1. perform the post-processing using `shc-tools`
 
-Note that using LAMMPS from Python requires that you have built LAMMPS as a dynamically shared library as instructed in the [LAMMPS manual](http://lammps.sandia.gov/doc/Section_python.html).
+### Prerequisites
+
+- Using LAMMPS from Python requires that you have built LAMMPS as a dynamically shared library as instructed in the [LAMMPS manual](http://lammps.sandia.gov/doc/Section_python.html)
+- Simulation uses the `sw` pair style, which is included in the `MANYBODY` package.
+See [here](https://lammps.sandia.gov/doc/Build_package.html) how to include packages in your
+LAMMPS build.
+- You need to have [numpy](https://docs.scipy.org/doc/numpy/index.html) installed.
 
 ## TODO
 - Documentation for calcSHC.py
