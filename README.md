@@ -18,7 +18,7 @@ in the [shc-tools](./shc-tools) folder. It contains:
 
 ## Example
 
-Folder [example](./example]) contains a self-contained example for calculating the spectral heat current flowing across a slab of amorphous Si. The script to be run is called `silicon_example.py`. It performs the following steps:
+Folder [example](./example) contains a self-contained example for calculating the spectral heat current flowing across a slab of amorphous Si. The script to be run is called `silicon_example.py`. It performs the following steps:
 
 1. prepare a box of atoms,
 1. call LAMMPS to perform the quenching procedure contained in LAMMPS input file `quench_Si.lmp`,
