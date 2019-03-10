@@ -7,3 +7,4 @@
 *.restart
 *.lammps
 *.compact
+.python-version
