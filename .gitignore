@@ -8,3 +8,4 @@
 *.lammps
 *.compact
 .python-version
+compactify_vels
