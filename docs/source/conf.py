@@ -12,10 +12,14 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+path = os.path.abspath('../..')
+print("Adding path", path)
+sys.path.insert(0, path)
+sys.path.insert(0, os.path.abspath('../../sdhc'))
 
+from sdhc import SHCPostProc
 
 # -- Project information -----------------------------------------------------
 

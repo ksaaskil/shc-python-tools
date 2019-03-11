@@ -3,6 +3,10 @@ import numpy as np
 import os
 import sys
 
+
+__all__ = ["fcCalc"]
+
+
 class fcCalc:
 
     def __init__(self,fileprefix,restartfile):

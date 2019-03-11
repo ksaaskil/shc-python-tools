@@ -3,6 +3,10 @@
 from __future__ import division
 import numpy as np
 
+
+__all__ = ["SHCPostProc"]
+
+
 class SHCPostProc(object):
     """
     Post-process the data produced using LAMMPS Molecular Dynamics simulation to calculate the spectral heat current.
