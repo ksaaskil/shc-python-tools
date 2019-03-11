@@ -9,3 +9,6 @@
 *.compact
 .python-version
 compactify_vels
+.DS_Store
+.idea/
+sdhc.egg-info/
