@@ -7,6 +7,8 @@ This repository contains Python tools for calculating the spectral heat current 
 
 These codes are meant to help anyone interested in implementing the spectral heat current calculations for their own applications. If you want to use the codes for research purposes, please cite the above-mentioned publications and let me know.
 
+See detailed API documentation in [readthedocs.io](https://shc-python-tools.readthedocs.io/en/latest/).
+
 ## Contents
 
 The actual library for computing spectral heat current distributions is found
