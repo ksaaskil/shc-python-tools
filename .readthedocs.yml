@@ -1,0 +1,9 @@
+# https://docs.readthedocs.io/en/latest/yaml-config.html
+build:
+    image: latest
+
+python:
+    version: 2.7
+    pip_install: true
+    extra_requirements:
+    - dev
