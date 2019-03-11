@@ -4,7 +4,8 @@
 import numpy as np
 from randomAtomBox import atombox
 from lammps import lammps
-from SHCPostProc import SHCPostProc 
+from sdhc import SHCPostProc
+
 
 def main(filePrefix):
 
@@ -60,18 +61,18 @@ def main(filePrefix):
     scaleFactor=1.602e-19/(1e-20)*1e4
     dt_md=2.5e-15
 
-    pP=SHCPostProc.SHCPostProc(fileCompactVels,
-                               KijFilePrefix,
-                               dt_md=dt_md,
-                               scaleFactor=scaleFactor,
-                               LAMMPSDumpFile=fileVels,
-                               widthWin=widthWin,
-                               NChunks=20,
-                               chunkSize=50000,
-                               backupPrefix=filePrefix,
-                               LAMMPSRestartFile=restartFile,
-                               reCalcVels=True,
-                               reCalcFC=True)
+    pP=SHCPostProc(fileCompactVels,
+                   KijFilePrefix,
+                   dt_md=dt_md,
+                   scaleFactor=scaleFactor,
+                   LAMMPSDumpFile=fileVels,
+                   widthWin=widthWin,
+                   NChunks=20,
+                   chunkSize=50000,
+                   backupPrefix=filePrefix,
+                   LAMMPSRestartFile=restartFile,
+                   reCalcVels=True,
+                   reCalcFC=True)
 
     pP.postProcess()
 
@@ -86,6 +87,7 @@ def main(filePrefix):
 
     # Saving the frequencies and heat currents to file
     np.savetxt(fileprefix+'_SHC.txt',np.column_stack((oms,pP.SHC_smooth)))
+
 
 if __name__=='__main__':
 

@@ -3,8 +3,12 @@
 from __future__ import division
 import numpy as np
 
+
+__all__ = ["SHCPostProc"]
+
+
 class SHCPostProc(object):
-    '''
+    """
     Post-process the data produced using LAMMPS Molecular Dynamics simulation to calculate the spectral heat current.
 
     The velocities are read from the "compact" file produced with the C++-code compactify_vels.cpp from a LAMMPS dump file. If the file does not exist, it is produced by calling the binary "compactify_vels", which must be found in the environment's $PATH.
@@ -19,7 +23,7 @@ class SHCPostProc(object):
       SHC_average (numpy float array): The chunk-averaged spectral heat current without smoothing
       SHC_error (numpy float array): The estimated error from the between-chunk variance, None if only one chunk evaluated
       oms_fft (numpy float array): The angular frequency grid (in the units of Hz if dt_md is given in the units of seconds in the initialization)
-    '''
+    """
 
     def __init__(self,compactVelocityFile,KijFilePrefix,reCalcVels=False,reCalcFC=False,**args):
         '''

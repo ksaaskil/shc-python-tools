@@ -1,8 +1,11 @@
 
-from lammps import lammps
 import numpy as np
 import os
 import sys
+
+
+__all__ = ["fcCalc"]
+
 
 class fcCalc:
 
@@ -25,7 +28,7 @@ class fcCalc:
         return False
 
     def preparelammps(self,pair_style=None,pair_coeff=None,x_interface=0.5,w_interface=3.0):
-
+        from lammps import lammps
         restartfile=self.restartfile
         self.lmp=lammps()
         self.lmp.command("atom_modify map hash")
