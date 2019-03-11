@@ -10,22 +10,22 @@ These codes are meant to help anyone interested in implementing the spectral hea
 ## Contents
 
 The actual library for computing spectral heat current distributions is found
-in the [shc-tools](./shc-tools) folder. It contains:
-- [SHCPostProc.py](./shc-tools/SHCPostProc.py): Python class for performing the post-processing
-- [calcFC.py](./shc-tools/calcFC.py): Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
-- [compactify_vels.cpp](./shc-tools/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `shc-tools` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable CC).
+in the [sdhc](./sdhc) folder. It contains:
+- [SHCPostProc.py](./sdhc/SHCPostProc.py): Python class for performing the post-processing
+- [calcFC.py](./sdhc/calcFC.py): Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
+- [compactify_vels.cpp](./sdhc/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `shc-tools` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable CC).
 
 In addition, the root directory contains the script [calcSHC.py](./calcSHC.py) demonstrating how the post-processing class is used and how the data could be saved to file.
 
 ## Usage
 
-Include `shc-tools` in your `PYTHONPATH` and do
+Ensure that `sdhc` is found in your `PYTHONPATH` and do
 
 ```python
-from SHCPostProc import SHCPostProc
+from sdhc import SHCPostProc
 import numpy as np
 
-postprocessor = SHCPostProc.SHCPostProc(*args, **kwargs)
+postprocessor = SHCPostProc(*args, **kwargs)
 postprocessor.postProcess()
 
 # Save frequencies and smoothened spectral heat currents as NumPy files
