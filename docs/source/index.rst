@@ -24,7 +24,7 @@ for their own applications. If you want to use the code
 for research purposes, please cite the above-mentioned
 publications and let me know.
 
-`Note that I'm currently rewriting both the documentation and code so this is still work in progress!`
+   *Note that I'm currently rewriting both the documentation and code so this is still work in progress!*
 
 Installation
 ------------
@@ -35,6 +35,9 @@ and install the package from the repository root::
    $ pip install -e .
 
 The command installs the library and its dependencies listed in ``setup.py``.
+
+If you wish to use Python package to compute the force constants,
+you need to have
 
 I will later also add the package to PyPI so one can simply do ``pip install sdhc``.
 
