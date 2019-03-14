@@ -24,6 +24,10 @@ QUENCH_STEPS_HEATING = 5e5
 QUENCH_STEPS_QUENCH = 1e6
 QUENCH_STEPS_COOLED = 5e5
 
+SIMU_STEPS_EQUIL = 5e5
+SIMU_STEPS_STEADY = 1e6
+SIMU_STEPS_SIMULATION = 1e6
+
 SYSTEM_LENGTH = 200
 SYSTEM_WIDTH = 20
 
@@ -66,6 +70,10 @@ def main(filePrefix):
     lmp = lammps()
     lmp.command("variable filename string '" + filePrefix + "'")
     lmp.command("variable restartfile string '" + restartFile + "'")
+    lmp.command("variable steps_equil equal {}".format(SIMU_STEPS_EQUIL))
+    lmp.command("variable steps_steady equal {}".format(SIMU_STEPS_STEADY))
+    lmp.command("variable steps_simu equal {}".format(SIMU_STEPS_SIMULATION))
+
     iterateFile(lmp, "amorphous_interface.lmp")
 
     fileCompactVels = filePrefix + '.vels.dat.compact'

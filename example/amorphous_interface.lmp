@@ -1,6 +1,10 @@
+# Expects these variables to be defined:
 # variable filename string 020215a
 # variable restartfile string ${filename}.quenched.restart
 # variable restartfile string 020215a.quenched.restart
+# variable steps_equil equal 500000
+# variable steps_steady equal 1000000
+# variable steps_simu equal 1000000
 
 read_restart ${restartfile} remap
 
@@ -28,10 +32,6 @@ variable dmid equal 3
 variable xmid equal (xhi+xlo)/2.0
 variable xmidlo equal ${xmid}-${dmid}
 variable xmidhi equal ${xmid}+${dmid}
-
-variable steps_equil equal 500000
-variable steps_steady equal 1000000
-variable steps_simu equal 1000000
 
 region 1 block INF ${Lfixed} INF INF INF INF
 region 2 block ${Lhelp} INF INF INF INF INF

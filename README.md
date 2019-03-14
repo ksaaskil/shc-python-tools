@@ -52,6 +52,7 @@ Folder [example](./example) contains a self-contained example for calculating th
 ### Prerequisites
 
 - Using LAMMPS from Python requires that you have built LAMMPS as a dynamically shared library as instructed in the [LAMMPS manual](http://lammps.sandia.gov/doc/Section_python.html)
+- You need to build `compactify_vels.cpp` in `scripts` folder and have that available in your `$PATH`.
 - Simulation uses the `sw` pair style, which is included in the `MANYBODY` package.
 See [here](https://lammps.sandia.gov/doc/Build_package.html) how to include packages in your
 LAMMPS build.
