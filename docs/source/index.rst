@@ -36,10 +36,15 @@ and install the package from the repository root::
 
 The command installs the library and its dependencies listed in ``setup.py``.
 
-If you wish to use Python package to compute the force constants,
-you need to have
+If you wish to use Python package to also compute the force constants,
+you need to have `Python library interface for LAMMPS <https://lammps.sandia.gov/doc/Python_head.html>`_ set up.
 
-I will later also add the package to PyPI so one can simply do ``pip install sdhc``.
+You will also need to build ``compactify_vels.cpp`` found in
+``scripts`` folder and have ``compactify_vels`` available in your ``$PATH``.
+If you're lucky, you only need to do `make` in `scripts` folder.
+
+I may later also add the package to PyPI so one can simply do ``pip install sdhc``
+to use the package to compute spectral decompositions.
 
 Usage
 -----
