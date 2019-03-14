@@ -1,7 +1,10 @@
-
+# Expects these variables to be defined:
 # variable filename string '090415a'
 # variable data_file string ${filename}_Si.dat # Where to read the structure
 # variable restartfile string ${filename}.quenched.restart
+# variable steps_heating equal 500000
+# variable steps_quench equal 1000000
+# variable steps_cooled equal 500000
 
 dimension 3
 log ${filename}.log
@@ -31,10 +34,6 @@ variable Tfinal equal 300
 variable Tdamp equal 0.5
 variable Pquench equal 1
 variable Pdamp equal 0.5
-
-variable steps_heating equal 500000
-variable steps_quench equal 1000000
-variable steps_cooled equal 500000
 
 fix NVE all nve
 timestep 0.0025
