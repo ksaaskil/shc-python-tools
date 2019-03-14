@@ -118,16 +118,16 @@ variable convert equal 2.0/3.0*1.602e-19/1.38e-23
 variable Ti atom c_KE*${convert}
 variable Ti2 atom v_Ti*v_Ti
 
-fix ave_KE_start all ave/spatial 100 500 50000 x lower 5 v_Ti v_Ti2 units box ave one file ${filename}.Ti_start.dat title1 "Atomic temperatures"
+# fix ave_KE_start all ave/spatial 100 500 50000 x lower 5 v_Ti v_Ti2 units box ave one file ${filename}.Ti_start.dat title1 "Atomic temperatures"
 
-fix aveinput_start hot ave/time 1 1 100 f_HOT ave one file ${filename}.aveinput_hot_start.dat
-fix aveinput_cold_start cold ave/time 1 1 100 f_COLD ave one file ${filename}.aveinput_cold_start.dat
+# fix aveinput_start hot ave/time 1 1 100 f_HOT ave one file ${filename}.aveinput_hot_start.dat
+# fix aveinput_cold_start cold ave/time 1 1 100 f_COLD ave one file ${filename}.aveinput_cold_start.dat
 
 # Wait for steady state
 run ${steps_steady}
-unfix ave_KE_start
-unfix aveinput_start
-unfix aveinput_cold_start
+# unfix ave_KE_start
+# unfix aveinput_start
+# unfix aveinput_cold_start
 # quit
 
 write_restart ${filename}.steadystate.restart
@@ -135,7 +135,7 @@ write_restart ${filename}.steadystate.restart
 fix aveinput hot ave/time 1 1 100 f_HOT ave one file ${filename}.aveinput_hot.dat
 fix aveinput_cold cold ave/time 1 1 100 f_COLD ave one file ${filename}.aveinput_cold.dat
 
-fix ave_KE all ave/spatial 100 1 100 x lower 5 v_Ti v_Ti2 units box ave running file ${filename}.Ti.dat overwrite title1 "Kinetic energies"
+# fix ave_KE all ave/spatial 100 1 100 x lower 5 v_Ti v_Ti2 units box ave running file ${filename}.Ti.dat overwrite title1 "Kinetic energies"
 
 # undump equil_coords
 
@@ -145,19 +145,19 @@ thermo 10000
 variable dt_dump equal 5
 # dump pairs interface local ${dt_dump} forces.dat index c_atomids[1] c_atomids[2] c_atomids[3] c_atomids[4] c_forces[1] c_forces[2] c_forces[3]
 dump vels interface custom ${dt_dump} ${filename}.vels.dat id type vx vy vz
-dump_modify vels format "%d %d %.8g %.8g %.8g"
+dump_modify vels format line "%d %d %.8g %.8g %.8g"
 dump_modify vels sort id
 
 dump pos interface custom 1000 ${filename}.pos.dat id type x y z
-dump_modify pos format "%d %d %.8g %.8g %.8g"
+dump_modify pos format line "%d %d %.8g %.8g %.8g"
 dump_modify pos sort id
 
 #dump velsL interfaceL custom ${dt_dump} ${filename}.velsL.dat id type vx vy vz
-#dump_modify velsL format "%d %d %.8g %.8g %.8g"
+#dump_modify velsL format line "%d %d %.8g %.8g %.8g"
 #dump_modify velsL sort id
 
 #dump velsR interfaceR custom ${dt_dump} ${filename}.velsR.dat id type vx vy vz
-#dump_modify velsR format "%d %d %.8g %.8g %.8g"
+#dump_modify velsR format line "%d %d %.8g %.8g %.8g"
 #dump_modify velsR sort id
 # thermo_style custom step v_ke
 # fix printtaus all print 10 "ke=${ke}"
