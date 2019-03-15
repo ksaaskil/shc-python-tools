@@ -4,6 +4,17 @@ from randomAtomBox import atombox
 from sdhc import SHCPostProc
 from lammps import lammps
 
+QUENCH_STEPS_HEATING = 5e5
+QUENCH_STEPS_QUENCH = 1e6
+QUENCH_STEPS_COOLED = 5e5
+
+SIMU_STEPS_EQUIL = 5e5
+SIMU_STEPS_STEADY = 1e6
+SIMU_STEPS_SIMULATION = 1e6
+
+SYSTEM_LENGTH = 200
+SYSTEM_WIDTH = 20
+
 
 def iterateFile(lmp, filename):
     """
@@ -20,45 +31,20 @@ def iterateFile(lmp, filename):
     return
 
 
-QUENCH_STEPS_HEATING = 5e5
-QUENCH_STEPS_QUENCH = 1e6
-QUENCH_STEPS_COOLED = 5e5
-
-SIMU_STEPS_EQUIL = 5e5
-SIMU_STEPS_STEADY = 1e6
-SIMU_STEPS_SIMULATION = 1e6
-
-SYSTEM_LENGTH = 200
-SYSTEM_WIDTH = 20
-
-
-def main(filePrefix):
-    """
-    Run SDHC example for a-Si.
-
-    :param filePrefix: File prefix, e.g. `090419a`
-    :type filePrefix: str
-    :return: None
-    """
-
-    dataFile = filePrefix + '_Si.dat'
-    restartFile = filePrefix + '.quenched.restart'
-
+def write_initial_positions_file(filename):
     mass = 28.0
     rho = 2.291  # Density in g/cm^3
-
-    Natoms = np.int(np.round(rho * 1e-3 / 1e-6 * SYSTEM_LENGTH * SYSTEM_WIDTH ** 2 * 1e-30 / (mass * 1.66e-27)))
-    # Create the box of silicon atoms, write to datafile
-    ab = atombox(SYSTEM_LENGTH, SYSTEM_WIDTH, Natoms)
+    n_atoms = np.int(np.round(rho * 1e-3 / 1e-6 * SYSTEM_LENGTH * SYSTEM_WIDTH ** 2 * 1e-30 / (mass * 1.66e-27)))
+    ab = atombox(SYSTEM_LENGTH, SYSTEM_WIDTH, n_atoms)
     ab.fillBox(seed=1234)
-    ab.writeToFile(dataFile, mass)
-    del ab
+    ab.writeToFile(filename, mass)
 
-    # Minimize the atom positions
+
+def perform_quench(file_prefix, atom_positions_file, restart_file):
     lmp = lammps()
-    lmp.command("variable filename string '" + filePrefix + "'")
-    lmp.command("variable datafile string '" + dataFile + "'")
-    lmp.command("variable restartfile string '" + restartFile + "'")
+    lmp.command("variable filename string '" + file_prefix + "'")
+    lmp.command("variable datafile string '" + atom_positions_file + "'")
+    lmp.command("variable restartfile string '" + restart_file + "'")
 
     lmp.command("variable steps_heating equal {}".format(QUENCH_STEPS_HEATING))
     lmp.command("variable steps_quench equal {}".format(QUENCH_STEPS_QUENCH))
@@ -67,50 +53,79 @@ def main(filePrefix):
     iterateFile(lmp, "quench_Si.lmp")
     lmp.close()
 
+
+def perform_simulation(file_prefix, restart_file):
     lmp = lammps()
-    lmp.command("variable filename string '" + filePrefix + "'")
-    lmp.command("variable restartfile string '" + restartFile + "'")
+    lmp.command("variable filename string '" + file_prefix + "'")
+    lmp.command("variable restartfile string '" + restart_file + "'")
     lmp.command("variable steps_equil equal {}".format(SIMU_STEPS_EQUIL))
     lmp.command("variable steps_steady equal {}".format(SIMU_STEPS_STEADY))
     lmp.command("variable steps_simu equal {}".format(SIMU_STEPS_SIMULATION))
 
     iterateFile(lmp, "amorphous_interface.lmp")
+    lmp.close()
 
-    fileCompactVels = filePrefix + '.vels.dat.compact'
-    fileVels = filePrefix + '.vels.dat'
-    widthWin = 0.5e12
 
-    KijFilePrefix = filePrefix
-    scaleFactor = 1.602e-19 / (1e-20) * 1e4
-    dt_md = 2.5e-15
+def compute_sdhc(file_prefix, restart_file):
+    compact_velocities_file = file_prefix + '.vels.dat.compact'
+    atomic_velocities_file = file_prefix + '.vels.dat'
+    frequency_window_width = 0.5e12
 
-    pP = SHCPostProc(fileCompactVels,
-                     KijFilePrefix,
-                     dt_md=dt_md,
-                     scaleFactor=scaleFactor,
-                     LAMMPSDumpFile=fileVels,
-                     widthWin=widthWin,
-                     NChunks=20,
-                     chunkSize=50000,
-                     backupPrefix=filePrefix,
-                     LAMMPSRestartFile=restartFile,
-                     reCalcVels=True,
-                     reCalcFC=True)
+    force_constant_file_prefix = file_prefix
+    unit_scaling_factor = 1.602e-19 / (1e-20) * 1e4
+    md_timestep = 2.5e-15
 
-    pP.postProcess()
+    postprocessor = SHCPostProc(compact_velocities_file,
+                                force_constant_file_prefix,
+                                dt_md=md_timestep,
+                                scaleFactor=unit_scaling_factor,
+                                LAMMPSDumpFile=atomic_velocities_file,
+                                widthWin=frequency_window_width,
+                                NChunks=20,
+                                chunkSize=50000,
+                                backupPrefix=file_prefix,
+                                LAMMPSRestartFile=restart_file,
+                                reCalcVels=True,
+                                reCalcFC=True)
+
+    postprocessor.postProcess()
+    return postprocessor
+
+
+def main(file_prefix):
+    """
+    Run SDHC example for a-Si.
+
+    :param file_prefix: File prefix, e.g. `090419a`
+    :type file_prefix: str
+    :return: None
+    """
+
+    atom_positions_file = file_prefix + '_Si.dat'
+    restart_file = file_prefix + '.quenched.restart'
+
+    write_initial_positions_file(atom_positions_file)
+
+    # Do quenching
+    perform_quench(file_prefix, atom_positions_file, restart_file)
+
+    # Gather data from simulation
+    perform_simulation(file_prefix, restart_file)
+
+    postprocessor = compute_sdhc(file_prefix, restart_file)
 
     # Pickling the post-processing object into file
     import cPickle as pickle
-    with open(filePrefix + '_PP.pckl', 'w') as f:
-        pickle.dump(pP, f)
+    with open(file_prefix + '_PP.pckl', 'w') as f:
+        pickle.dump(postprocessor, f)
 
     # Saving into numpy files 
-    np.save(filePrefix + '_oms.npy', pP.oms_fft)
-    np.save(filePrefix + '_SHC.npy', pP.SHC_smooth)
+    np.save(file_prefix + '_oms.npy', postprocessor.oms_fft)
+    np.save(file_prefix + '_SHC.npy', postprocessor.SHC_smooth)
 
     # Saving the frequencies and heat currents to file
-    np.savetxt(filePrefix + '_SHC.txt', np.column_stack((pP.oms_fft, pP.SHC_smooth)))
+    np.savetxt(file_prefix + '_SHC.txt', np.column_stack((postprocessor.oms_fft, postprocessor.SHC_smooth)))
 
 
 if __name__ == '__main__':
-    main(filePrefix='094015a')
+    main(file_prefix='094015a')
