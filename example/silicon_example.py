@@ -103,16 +103,16 @@ def compute_sdhc(folder: Path, restart_file: Path):
     md_timestep = 2.5e-15
 
     postprocessor = SHCPostProc(
-        compact_velocities_file,
-        force_constant_file_prefix,
+        compactVelocityFile=str(compact_velocities_file),
+        KijFilePrefix=str(force_constant_file_prefix),
         dt_md=md_timestep,
         scaleFactor=unit_scaling_factor,
-        LAMMPSDumpFile=atomic_velocities_file,
+        LAMMPSDumpFile=str(atomic_velocities_file),
         widthWin=frequency_window_width,
         NChunks=20,
         chunkSize=50000,
-        backupPrefix=backup_prefix,
-        LAMMPSRestartFile=restart_file,
+        backupPrefix=str(backup_prefix),
+        LAMMPSRestartFile=str(restart_file),
         reCalcVels=True,
         reCalcFC=True,
     )

@@ -1,13 +1,26 @@
-from __future__ import division, print_function
+from dataclasses import dataclass
+import os
+import subprocess
+
 import numpy as np
 
+from sdhc.config import logger
 from sdhc.fcCalc import fcCalc
 
 
 __all__ = ["SHCPostProc"]
 
 
-class SHCPostProc(object):
+@dataclass(frozen=True)
+class SdhcResult:
+    smooth: np.ndarray
+    smooth2: np.ndarray
+    average: np.ndarray
+    error: np.ndarray
+    oms_fft: np.ndarray
+
+
+class SHCPostProc:
     """
     Compute the spectral decomposition of heat current from the data
     produced using LAMMPS MD simulation.
@@ -30,51 +43,40 @@ class SHCPostProc(object):
         - SHC_error (numpy float array): The estimated error from the between-chunk variance, None if only one chunk evaluated
         - oms_fft (numpy float array): The angular frequency grid (in the units of Hz if dt_md is given in the units of seconds in the initialization)
 
-    :param compactVelocityFile: Path to file from where the velocities are read. Produced using the binary compactify_vels if the file does not exist. In this case, you must also supply the keyword argument LAMMPSDumpFile containing the velocities produced using LAMMPS.
-    :type compactVelocityFile: str
-    :param KijFilePrefix: The prefix used in trying to find the force constant matrix file KijFilePrefix.Kij.npy. If the file does not exist, the force constant calculator fcCalc is called using the keyword argument LAMMPSRestartFile (which must be supplied in this case).
-    :type KijFilePrefix: str
-    :param reCalcVels: Force recreation of the compact velocity file if True, defaults to False
-    :type reCalcVels: boolean, optional
-    :param reCalcFC: Re-calculate force constants if True, defaults to False
-    :type reCalcFC: boolean, optional
-    :param args: Additional keyword arguments
-
-    Additional keyword arguments::
-
-           - dt_md (float): Timestep used in the NEMD simulation (seconds), used for inferring the sampling timestep and the frequency grid (default 1.0)
-           - scaleFactor (float): Multiply the spectral heat current by this factor to convert to correct units (default 1.0)
-           - LAMMPSDumpFile (str): Use this velocity dump file produced by LAMMPS for post-processing, needed only if the compact velocity file cannot be found (default None)
-           - LAMMPSRestartFile (str): Use this restart file for calculating the force constants if the force constant file cannot be found (default None)
-           - widthWin (float): Use this width for the smoothing window (Hz) (default 1.0)
-           - chunkSize (int): Used chunk size for reading the velocities, affects the frequency grid (default 50000). Performing FFT is faster if chunkSize is a power of 2.
-           - NChunks (int): The number of chunks to be read, this should be set to a sufficiently large value if the whole velocity file should be read (default 20)
-           - backupPrefix (str): Prefix for pickling the post-processing object to a file after the read of each chunk (default None)
-           - hstep (float): The displacement used in calculating the force constants by the finite-displacement method (default 0.001)
+    - compactVelocityFile (str): Path to file from where the velocities are read. Produced using the binary compactify_vels if the file does not exist. In this case, you must also supply the keyword argument LAMMPSDumpFile containing the velocities produced using LAMMPS.
+    - KijFilePrefix (str): The prefix used in trying to find the force constant matrix file KijFilePrefix.Kij.npy. If the file does not exist, the force constant calculator fcCalc is called using the keyword argument LAMMPSRestartFile (which must be supplied in this case).
+    - reCalcVels (str): Force recreation of the compact velocity file if True, defaults to False
+    - reCalcFC (str): Re-calculate force constants if True, defaults to False
+    - dt_md (float): Timestep used in the NEMD simulation (seconds), used for inferring the sampling timestep and the frequency grid (default 1.0)
+    - scaleFactor (float): Multiply the spectral heat current by this factor to convert to correct units (default 1.0)
+    - LAMMPSDumpFile (str): Use this velocity dump file produced by LAMMPS for post-processing, needed only if the compact velocity file cannot be found (default None)
+    - LAMMPSRestartFile (str): Use this restart file for calculating the force constants if the force constant file cannot be found (default None)
+    - widthWin (float): Use this width for the smoothing window (Hz) (default 1.0)
+    - chunkSize (int): Used chunk size for reading the velocities, affects the frequency grid (default 50000). Performing FFT is faster if chunkSize is a power of 2.
+    - NChunks (int): The number of chunks to be read, this should be set to a sufficiently large value if the whole velocity file should be read (default 20)
+    - backupPrefix (str): Prefix for pickling the post-processing object to a file after the read of each chunk (default None)
+    - hstep (float): The displacement used in calculating the force constants by the finite-displacement method (default 0.001)
     """
 
     def __init__(
         self,
-        compactVelocityFile,
-        KijFilePrefix,
+        compactVelocityFile: str,
+        KijFilePrefix: str,
         reCalcVels=False,
         reCalcFC=False,
-        **args,
+        dt_md=1.0,
+        scaleFactor=1.0,
+        LAMMPSDumpFile: str = None,
+        LAMMPSRestartFile: str = None,
+        widthWin: float = 1.0,
+        chunkSize: int = 50000,
+        backupPrefix: str = None,
+        hstep: float = 0.001,
     ):
         # Attributes set by positional arguments
         self.compactVelocityFile = compactVelocityFile
         self.KijFilePrefix = KijFilePrefix
 
-        # Attributes set by keyword parameters below
-        self.dt_md = 1.0  # Default
-        self.scaleFactor = 1.0  # Default
-        self.LAMMPSDumpFile = None
-        self.LAMMPSRestartFile = None
-        self.widthWin = 1.0  # Default
-        self.chunkSize = 50000
-        self.NChunks = 20
-        self.backupPrefix = None
-        self.hstep = 0.001
         self.reCalcVels = reCalcVels
         self.reCalcFC = reCalcFC
 
@@ -90,13 +92,15 @@ class SHCPostProc(object):
         self.SHC_error = None
         self.oms_fft = None
 
-        for key, value in args.items():
-            if not hasattr(self, key):
-                raise ValueError("Invalid argument " + key + " to PostProc!")
-            print("Using the value " + key + "=" + str(value) + ".")
-            setattr(self, key, value)
-
-        import os
+        self.dt_md = dt_md
+        self.scaleFactor = scaleFactor
+        self.LAMMPSDumpFile = LAMMPSDumpFile
+        self.LAMMPSRestartFile = LAMMPSRestartFile
+        self.backupPrefix = backupPrefix
+        self.widthWin = widthWin
+        self.chunkSize = chunkSize
+        self.NChunks = 20
+        self.hstep = hstep
 
         if self.reCalcVels or not os.path.isfile(
             self.compactVelocityFile
@@ -104,16 +108,14 @@ class SHCPostProc(object):
             # Check that the LAMMPS Dump file exists
             if self.LAMMPSDumpFile is None or not os.path.isfile(self.LAMMPSDumpFile):
                 raise ValueError(
-                    "You must give the LAMMPS velocity dump file as an argument to create the file "
-                    + self.compactVelocityFile
-                    + "!"
+                    f"You must give the LAMMPS velocity dump file as an argument to create the file {self.compactVelocityFile}"
                 )
             # print self.compactVelocityFile + " does not exist, creating by reading from file " + self.LAMMPSDumpFile
             # Run the C++ script
             self._compactVels(self.LAMMPSDumpFile, self.compactVelocityFile)
 
         else:
-            print(
+            logger.info(
                 self.compactVelocityFile
                 + " exists, using the file for post-processing."
             )
@@ -122,16 +124,14 @@ class SHCPostProc(object):
         if self.reCalcFC or not os.path.isfile(
             self.KijFilePrefix + ".Kij.npy"
         ):  # Check if the force constant file exists
-            print("Creating file " + self.KijFilePrefix + ".")
+            logger.info(f"Creating force constants with prefix: {self.KijFilePrefix}")
             if self.LAMMPSRestartFile is None:
                 raise ValueError(
-                    "You must give the LAMMPSRestartFile as an argument so that the file "
-                    + self.KijFilePrefix
-                    + ".Kij.npy can be created!"
+                    f"You must give the LAMMPSRestartFile as an argument so that the file {self.KijFilePrefix}.Kij.npy can be created"
                 )
             self._calcFC(self.KijFilePrefix, self.LAMMPSRestartFile)
         else:  # Load the force constants from file
-            print(f"Loading force constants from: {self.KijFilePrefix}")
+            logger.info(f"Loading force constants from: {self.KijFilePrefix}")
             self._loadFC(self.KijFilePrefix)
 
     def __enter__(self):
@@ -149,49 +149,53 @@ class SHCPostProc(object):
             fc.fcCalc(self.hstep)
             fc.writeToFile()
             self.Kij = fc.Kij  # Reference
-            print(
+            assert self.Kij is not None
+            logger.info(
                 "Size of the Kij file is (3*%d)x(3*%d)."
                 % (np.size(self.Kij, 0) / 3, np.size(self.Kij, 1) / 3)
             )
             self.ids_L = fc.ids_L  # Reference
             self.ids_R = fc.ids_R  # Reference
+
+            assert self.ids_L is not None
+            assert self.ids_R is not None
+
             self.NL = len(self.ids_L)
-            print("len(ids_L)=%d" % self.NL)
+            logger.info(
+                "Number of atoms on the left interface: len(ids_L)=%d" % self.NL
+            )
             self.NR = len(self.ids_R)
-            print("len(ids_R)=%d" % self.NR)
+            logger.info(
+                "Number of atoms on the right interface: len(ids_R)=%d" % self.NR
+            )
 
     def _loadFC(self, KijFilePrefix):
-        print("Loading the force constants from " + KijFilePrefix + ".Kij.npy")
-        self.Kij = np.load(KijFilePrefix + ".Kij.npy")
-        print(
+        kij_file = f"{KijFilePrefix}.Kij.npy"
+        logger.info(f"Loading the force constants from {kij_file}")
+        self.Kij = np.load(kij_file)
+        logger.info(
             "Size of the Kij file is (3*%d)x(3*%d)."
             % (np.size(self.Kij, 0) / 3, np.size(self.Kij, 1) / 3)
         )
-        print(
-            "Loading left interfacial atom indices from " + KijFilePrefix + ".ids_L.npy"
-        )
-        self.ids_L = np.load(KijFilePrefix + ".ids_L.npy")
-        print(
-            "Loading right interfacial atom indices from "
-            + KijFilePrefix
-            + ".ids_R.npy"
-        )
-        self.ids_R = np.load(KijFilePrefix + ".ids_R.npy")
+        left_ids_file = f"{KijFilePrefix}.ids_L.npy"
+        logger.info("Loading left interfacial atom indices from {left_ids_file}")
+        self.ids_L = np.load(left_ids_file)
+        right_ids_file = f"{KijFilePrefix}.ids_R.npy"
+        logger.info(f"Loading right interfacial atom indices from {right_ids_file}")
+        self.ids_R = np.load(right_ids_file)
         self.NL = len(self.ids_L)
-        print("len(ids_L)=%d" % self.NL)
+        logger.info("Number of atoms on the left: len(ids_L)=%d" % self.NL)
         self.NR = len(self.ids_R)
-        print("len(ids_R)=%d" % self.NR)
+        logger.info("Number of atoms on the right: len(ids_R)=%d" % self.NR)
         if (np.size(self.Kij, 0) / 3 != self.NL) or (
             np.size(self.Kij, 1) / 3 != self.NR
         ):
             raise ValueError("Sizes in Kij and ids_L/R do not match!")
 
     def _compactVels(self, fileVels, finalFileVels):
-        from subprocess import call
-
         command = ["compactify_vels", fileVels, finalFileVels]
-        print("Running " + " ".join(command))
-        call(command)
+        logger.info(f"Running command: {' '.join(command)}")
+        subprocess.run(command)
 
     def _smoothen(self, df, func, widthWin):
         Nwindow = int(np.ceil(widthWin / df))
@@ -205,10 +209,9 @@ class SHCPostProc(object):
         """
         Calculate the spectral decomposition and store to ``self.SHC_smooth``.
 
-        :return: None
         """
 
-        print("Reading the compact velocity file " + self.compactVelocityFile + ".")
+        logger.info(f"Reading the compact velocity file: {self.compactVelocityFile}")
         f = open(self.compactVelocityFile, "r")
         s = f.readline().split()
         NAtoms = int(s[1])
@@ -222,17 +225,17 @@ class SHCPostProc(object):
             )
 
         s = f.readline()
-        print(s)
+        # logger.info(s)
         s = s.split()
         self.sampleTimestep = int(s[1]) * self.dt_md
 
         s = f.readline()  # Atom ids:
-        print(s)
+        # logger.info(s)
         # Read the atom ids
-        indArray = np.fromfile(f, dtype=int, count=NAtoms, sep=" ")
+        _ = np.fromfile(f, dtype=int, count=NAtoms, sep=" ")
 
         s = f.readline()  # ------
-        print(s)
+        # logger.info(s)
 
         # Total number of degrees of freedom
         NDOF = 3 * (self.NL + self.NR)
@@ -248,16 +251,20 @@ class SHCPostProc(object):
 
         exitFlag = False
 
+        assert self.ids_L is not None
+        assert self.ids_R is not None
+        assert self.Kij is not None
+
         for k in np.arange(self.NChunks):  # Start the iteration over chunks
             #        for k in range(0,2): # Start the iteration over chunks
-            print("Chunk %d/%d." % (k + 1, self.NChunks))
+            logger.info("Chunk %d/%d." % (k + 1, self.NChunks))
             # Read a chunk of velocitites
             velArray = np.fromfile(
                 f, dtype=np.dtype("f8"), count=self.chunkSize * NDOF, sep=" "
             )
             # Prepare for exit if the read size does not match the chunk size
             if np.size(velArray) == 0:
-                print("Finished the file, exiting.")
+                logger.info("Finished the file, exiting.")
                 self.NChunks = k - 1
                 break
             elif np.size(velArray) != self.chunkSize * NDOF:
@@ -274,7 +281,7 @@ class SHCPostProc(object):
                         * np.pi
                     )
                     Nfreqs = np.size(self.oms_fft)
-                    print(
+                    logger.info(
                         "Changing chunk size to "
                         + str(int(np.size(velArray) / NDOF))
                         + "!"
@@ -336,10 +343,6 @@ class SHCPostProc(object):
                 if self.backupPrefix is not None:
                     np.save(self.backupPrefix + "_backup_oms.npy", self.oms_fft)
                     np.save(self.backupPrefix + "_backup_SHC.npy", self.SHC_smooth)
-                    import cPickle as pickle
-
-                    with open(self.backupPrefix + "_run_PP.pckl", "w") as pf:
-                        pickle.dump(self, pf)
             elif (
                 exitFlag and k == 0
             ):  # First chunk and new chunk size, needs re-initializing the vectors as Nfreqs may have changed
@@ -355,7 +358,7 @@ class SHCPostProc(object):
 
         # Calculate the error estimate at each frequency from the between-chunk variances
         if self.NChunks > 1:
-            print("Calculating error estimates.")
+            logger.info("Calculating error estimates.")
             samplevar = (self.NChunks / (self.NChunks - 1.0)) * (
                 self.SHC_smooth2 - self.SHC_smooth ** 2
             )
@@ -363,4 +366,6 @@ class SHCPostProc(object):
         else:
             self.SHC_error = None
 
-        print("Finished post-processing.")
+        f.close()
+
+        logger.info("Finished post-processing.")
