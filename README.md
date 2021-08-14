@@ -32,7 +32,7 @@ in the [`sdhc`](./sdhc) folder. It contains:
 
 - [`SHCPostProc.py`](./sdhc/SHCPostProc.py): Python class for performing the post-processing
 - [`calcFC.py`](./sdhc/calcFC.py): Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
-- [`compactify_vels.cpp`](./sdhc/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `shc-tools` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable CC).
+- [`compactify_vels.cpp`](./scripts/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `scripts` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable `CC`).
 
 In addition, the root directory contains the script [calcSHC.py](./calcSHC.py) demonstrating how the post-processing class is used and how the data could be saved to file.
 

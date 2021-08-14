@@ -1,12 +1,14 @@
-from __future__ import print_function
-
+from pathlib import Path
 import os
 
 import numpy as np
-from randomAtomBox import atombox
+
+# from randomAtomBox import atombox
 from sdhc import SHCPostProc
+from sdhc.utils import make_atombox
 from lammps import lammps
 
+# Speed-up for small machines, use '1' for high-quality data
 SCALE = 10
 
 QUENCH_STEPS_HEATING = 5e5 / SCALE
@@ -20,13 +22,16 @@ SIMU_STEPS_SIMULATION = 1e6 / SCALE
 SYSTEM_LENGTH = 200
 SYSTEM_WIDTH = 20
 
+QUENCH_LMP_PATH = Path(__file__).parent.joinpath("quench.lmp")
+SIMULATION_LMP_PATH = Path(__file__).parent.joinpath("simulation.lmp")
 
-def iterateFile(lmp, filename):
+
+def iterateFile(lmp: lammps, filename: Path):
     """
     Do the same as lmp.file(filename) but allow the script to be
     continued after quit.
     """
-    with open(filename, "r") as f:
+    with filename.open("r") as f:
         for line in f:
             print(line)
             if "quit" in line and line[0] != "#":
@@ -36,7 +41,7 @@ def iterateFile(lmp, filename):
     return
 
 
-def write_initial_positions_file(filename):
+def write_initial_positions_file(filename: Path):
     mass = 28.0
     rho = 2.291  # Density in g/cm^3
     n_atoms = int(
@@ -50,61 +55,65 @@ def write_initial_positions_file(filename):
             / (mass * 1.66e-27)
         )
     )
-    ab = atombox(SYSTEM_LENGTH, SYSTEM_WIDTH, n_atoms)
-    ab.fillBox(seed=1234)
-    ab.writeToFile(filename, mass)
+    make_atombox(
+        length=SYSTEM_LENGTH,
+        width=SYSTEM_WIDTH,
+        n_atoms=n_atoms,
+        atom_mass=mass,
+        output=filename,
+    )
 
 
-def perform_quench(folder, atom_positions_file, restart_file):
+def do_quench(folder: Path, lammps_data_file: Path, restart_file: Path):
     lmp = lammps()
     file_prefix = os.path.join(folder, "quench")
-    lmp.command("variable filename string '" + file_prefix + "'")
-    lmp.command("variable datafile string '" + atom_positions_file + "'")
-    lmp.command("variable restartfile string '" + restart_file + "'")
+    lmp.command(f"variable filename string '{file_prefix}'")
+    lmp.command(f"variable datafile string '{lammps_data_file}'")
+    lmp.command(f"variable restartfile string '{restart_file}'")
 
-    lmp.command("variable steps_heating equal {}".format(QUENCH_STEPS_HEATING))
-    lmp.command("variable steps_quench equal {}".format(QUENCH_STEPS_QUENCH))
-    lmp.command("variable steps_cooled equal {}".format(QUENCH_STEPS_COOLED))
+    lmp.command(f"variable steps_heating equal {QUENCH_STEPS_HEATING}")
+    lmp.command(f"variable steps_quench equal {QUENCH_STEPS_QUENCH}")
+    lmp.command(f"variable steps_cooled equal {QUENCH_STEPS_COOLED}")
 
-    iterateFile(lmp, "quench_Si.lmp")
+    iterateFile(lmp, QUENCH_LMP_PATH)
     lmp.close()
 
 
-def perform_simulation(folder, restart_file):
-    file_prefix = os.path.join(folder, "simu")
+def do_simulation(folder: Path, restart_file: Path):
+    file_prefix = folder.joinpath("simu")
     lmp = lammps()
-    lmp.command("variable filename string '" + file_prefix + "'")
-    lmp.command("variable restartfile string '" + restart_file + "'")
-    lmp.command("variable steps_equil equal {}".format(SIMU_STEPS_EQUIL))
-    lmp.command("variable steps_steady equal {}".format(SIMU_STEPS_STEADY))
-    lmp.command("variable steps_simu equal {}".format(SIMU_STEPS_SIMULATION))
+    lmp.command(f"variable filename string '{file_prefix}'")
+    lmp.command(f"variable restartfile string '{restart_file}'")
+    lmp.command(f"variable steps_equil equal {SIMU_STEPS_EQUIL}")
+    lmp.command(f"variable steps_steady equal {SIMU_STEPS_STEADY}")
+    lmp.command(f"variable steps_simu equal {SIMU_STEPS_SIMULATION}")
 
-    iterateFile(lmp, "amorphous_interface.lmp")
+    iterateFile(lmp, SIMULATION_LMP_PATH)
     lmp.close()
 
 
-def compute_sdhc(folder, restart_file):
+def compute_sdhc(folder: Path, restart_file: Path):
 
-    compact_velocities_file = os.path.join(folder, "vels.dat.compact")
-    atomic_velocities_file = os.path.join(folder, "simu.vels.dat")
+    compact_velocities_file = folder.joinpath("vels.dat.compact")
+    atomic_velocities_file = folder.joinpath("simu.vels.dat")
     frequency_window_width = 0.5e12
 
-    backup_prefix = os.path.join(folder, "backup")
-    force_constant_file_prefix = os.path.join(folder, "force_constants")
+    backup_prefix = folder.joinpath("backup")
+    force_constant_file_prefix = folder.joinpath("force_constants")
     unit_scaling_factor = 1.602e-19 / 1e-20 * 1e4
     md_timestep = 2.5e-15
 
     postprocessor = SHCPostProc(
-        compact_velocities_file,
-        force_constant_file_prefix,
+        compactVelocityFile=str(compact_velocities_file),
+        KijFilePrefix=str(force_constant_file_prefix),
         dt_md=md_timestep,
         scaleFactor=unit_scaling_factor,
-        LAMMPSDumpFile=atomic_velocities_file,
+        LAMMPSDumpFile=str(atomic_velocities_file),
         widthWin=frequency_window_width,
         NChunks=20,
         chunkSize=50000,
-        backupPrefix=backup_prefix,
-        LAMMPSRestartFile=restart_file,
+        backupPrefix=str(backup_prefix),
+        LAMMPSRestartFile=str(restart_file),
         reCalcVels=True,
         reCalcFC=True,
     )
@@ -113,47 +122,41 @@ def compute_sdhc(folder, restart_file):
     return postprocessor
 
 
-def main(folder):
+def main(folder: Path = Path("lammps-output")):
     """
     Run SDHC example for a-Si.
 
-    :param folder: Folder where to store everything `090419a`
-    :type folder: str
-    :return: None
+    folder: Path to folder where to store output. For example, `090419a`
     """
 
-    if not os.path.exists(folder):
-        os.mkdir(folder)
+    folder.mkdir(exist_ok=True)
 
-    atom_positions_file = os.path.join(folder, "Si.dat")
-    restart_file = os.path.join(folder, "quenched.restart")
-
+    atom_positions_file = folder.joinpath("Si.dat")
     write_initial_positions_file(atom_positions_file)
 
     # Do quenching
-    perform_quench(folder, atom_positions_file, restart_file)
+    restart_file = folder.joinpath("quenched.restart")
+    do_quench(folder, atom_positions_file, restart_file)
 
     # Gather data from simulation
-    perform_simulation(folder, restart_file)
+    do_simulation(folder, restart_file)
 
     postprocessor = compute_sdhc(folder, restart_file)
 
-    # Pickling the post-processing object into file
-    # import cPickle as pickle
-
-    # with open(os.path.join(folder, "PP.pckl"), "w") as f:
-    #     pickle.dump(postprocessor, f)
-
     # Saving into numpy files
-    np.save(os.path.join(folder, "oms.npy"), postprocessor.oms_fft)
-    np.save(os.path.join(folder, "SHC.npy"), postprocessor.SHC_smooth)
+    np.save(folder.joinpath("oms.npy"), postprocessor.oms_fft)
+    np.save(folder.joinpath("SHC.npy"), postprocessor.SHC_smooth)
 
-    # Saving the frequencies and heat currents to file
+    # Saving the frequencies and heat currents to CSV file
     np.savetxt(
-        os.path.join(folder, "SHC.txt"),
+        folder.joinpath("SHC.csv"),
         np.column_stack((postprocessor.oms_fft, postprocessor.SHC_smooth)),
+        delimiter=",",
     )
+
+    # Read back using e.g. pandas
+    # df = pd.read_csv(CSV_FILE, names=["omega", "sdhc"])
 
 
 if __name__ == "__main__":
-    main(folder="lammps-output")
+    main()
