@@ -42,7 +42,7 @@ class atombox:
 
     def writeToFile(self,filetowrite,atomMass):
         if self.xs is None:
-            print "You must fill the box first!"
+            print("You must fill the box first!")
             return False
         with writer(filetowrite=filetowrite,
                     xs=self.xs,
@@ -73,9 +73,9 @@ if __name__=="__main__":
 
     # Calculate number of atoms assuming density
     rho=2.291 # In g/cm^3
-    Natoms=np.int(np.round(rho*1e-3/1e-6*length*width**2*1e-30/(mass*1.66e-27)))
+    Natoms=int(np.round(rho*1e-3/1e-6*length*width**2*1e-30/(mass*1.66e-27)))
     
-    print "Number of atoms is %d." % (Natoms)
+    print("Number of atoms is %d." % (Natoms))
 
     with atombox(length=length,width=width,Natoms=Natoms) as ab:
         # Generate the coordinates

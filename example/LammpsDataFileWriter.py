@@ -45,18 +45,18 @@ class writer(object):
 
         for key,value in kwargs.items():
             if not hasattr(self,key):
-                raise ValueError, "Unknown argument to the writer."
+                raise ValueError("Unknown argument to the writer.")
             setattr(self,key,value)
 
         self.Natoms=len(xs)
         if self.Natoms!=len(ys) or self.Natoms!=len(zs):
-            raise AttributeError, "xs, ys and zs must have the same size."
+            raise AttributeError("xs, ys and zs must have the same size.")
 
         if self.tags is None:
             self.tags=[1]*self.Natoms
             
         if len(self.tags)!=self.Natoms:
-            raise ValueError, "The length of tag list must coincide with the length of xs,ys,zs."
+            raise ValueError("The length of tag list must coincide with the length of xs,ys,zs.")
 
         maxtag=max(self.tags)
 
@@ -64,7 +64,7 @@ class writer(object):
             self.masses=[1]*maxtag
 
         if len(self.masses)!=maxtag:
-            raise AttributeError, "The number of given masses must coincide with the maximum tag."
+            raise AttributeError("The number of given masses must coincide with the maximum tag.")
 
         shift=0.1
         if self.xlo is None:
@@ -95,7 +95,7 @@ class writer(object):
         return False
 
     def writeToFile(self):
-        print "Writing to file %s." % self.file
+        print("Writing to file %s." % self.file)
         with open(self.file,'w') as f:
 
             f.write('# '+self.header+'\n')
@@ -118,4 +118,4 @@ class writer(object):
             for i in range(0,self.Natoms):
                 f.write('%d %d %.5f %.5f %.5f\n' % (i+1,self.tags[i],self.xs[i],self.ys[i],self.zs[i]))
 
-            print "Finished writing to file "+self.file+"."
+            print("Finished writing to file "+self.file+".")

@@ -61,7 +61,7 @@ class fcCalc:
 
         xlo = self.lmp.extract_global("boxxlo", 1)
         xhi = self.lmp.extract_global("boxxhi", 1)
-        print "Box is [%f,%f]." % (xlo, xhi)
+        print("Box is [%f,%f]." % (xlo, xhi))
 
         # The position of the interface, at the middle by default (0.5)
         x_interface = (xlo + xhi) * x_interface
@@ -133,7 +133,7 @@ class fcCalc:
             indx = 3 * ind1
             indy = 3 * ind1 + 1
             indz = 3 * ind1 + 2
-            print "\n Moving atom %i/%i. \n" % (i1 + 1, len(inds_left))
+            print("\n Moving atom %i/%i. \n" % (i1 + 1, len(inds_left)))
 
             # Move atom to directions x, y, and z
             for direction in [0, 1, 2]:

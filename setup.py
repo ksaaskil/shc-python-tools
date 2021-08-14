@@ -8,15 +8,14 @@ import sys
 NAME = 'sdhc'
 DESCRIPTION = 'Tools for computing spectral heat current distribution using LAMMPS simulations'
 URL = 'https://github.com/ksaaskil/shc-python-tools'
-EMAIL = 'ksaaskil@gmail.com'
 AUTHOR = 'Kimmo S\"a\"askilahti'
-REQUIRES_PYTHON = '>=2.7.8'
+REQUIRES_PYTHON = '>=3.8.1'
 SRC_DIR = 'sdhc'  # Relative location wrt setup.py
 
 # Required packages.
 REQUIRED = ['numpy']
 
-DEV = ['pytest', 'sphinx', 'sphinx_rtd_theme']
+DEV = ['black==21.7b0', 'flake8', 'mypy', 'pytest', 'sphinx', 'sphinx_rtd_theme']
 
 EXTRAS = {'dev': DEV }
 
@@ -110,7 +109,6 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author=AUTHOR,
-    author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=find_packages(exclude=('tests',)),
@@ -122,10 +120,10 @@ setup(
         'Development Status :: 2 - Pre-Alpha',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Operating System :: MacOS',
         'Operating System :: POSIX',
         'Operating System :: Unix'

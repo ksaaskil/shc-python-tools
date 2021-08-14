@@ -9,6 +9,17 @@ These codes are meant to help anyone interested in implementing the spectral hea
 
 See detailed API documentation in [readthedocs.io](https://shc-python-tools.readthedocs.io/en/latest/).
 
+## Installation
+
+```bash
+$ git clone git@github.com:ksaaskil/shc-python-tools.git
+$ cd shc-python-tools
+# If you need development dependencies:
+$ pip install -e '.[dev]'
+# If not:
+$ pip install -e .
+```
+
 ## Contents
 
 The actual library for computing spectral heat current distributions is found
@@ -99,9 +110,10 @@ Make the executable available in your `PATH`:
 $ ln -sf ~/lammps/lammps-29Oct20/src/lmp_serial ~/bin/lmp_serial
 ```
 
-Build as shared library:
+Build as shared library and [include any required packages](https://docs.lammps.org/Build_package.html):
 
 ```bash
+$ make yes-MANYBODY
 $ make mode=shared serial
 ```
 
