@@ -5,57 +5,68 @@ from __future__ import division
 import numpy as np
 from SHCPostProc import SHCPostProc
 
-fileprefix='270315a'
-outputFolder='DATA/'+fileprefix+'_tar'
+fileprefix = "270315a"
+outputFolder = "DATA/" + fileprefix + "_tar"
 
 # Create the data folder
 from subprocess import call
-command=["mkdir","-p",outputFolder]
-print " ".join(command)
+
+command = ["mkdir", "-p", outputFolder]
+print(" ".join(command))
 call(command)
 
-dt_md=2.5e-15 # Timestep used in MD, affects the frequency grid
-widthWin=0.5e12 # Width of the Daniell smoothing window in Hz
+dt_md = 2.5e-15  # Timestep used in MD, affects the frequency grid
+widthWin = 0.5e12  # Width of the Daniell smoothing window in Hz
 # The velocity dump file from LAMMPS
-fileVels=fileprefix+'.vels.dat' 
+fileVels = fileprefix + ".vels.dat"
 # The compactly formatted velocity file, produced using a C++ script if not found
-fileCompactVels=fileprefix+'.vels.dat.compact' 
+fileCompactVels = fileprefix + ".vels.dat.compact"
 # Post-processor searches/saves file "KijFilePrefix.Kij.npy"
-KijFilePrefix='270115a' 
+KijFilePrefix = "270115a"
 # Use this restart file if the force constant file cannot be found
-restartFile=KijFilePrefix+'.quenched.restart' 
+restartFile = KijFilePrefix + ".quenched.restart"
 # Correct the units, this assumes the unit of eV/(A^2)*(A/ps)^2 for the v_iK_{ij}v_j product (LAMMPS metal units)
-scaleFactor=1.602e-19/(1e-20)*1e4
+scaleFactor = 1.602e-19 / (1e-20) * 1e4
 
 # Prepare the post-processor
-pP=SHCPostProc(fileCompactVels,KijFilePrefix,
-               dt_md=dt_md,scaleFactor=scaleFactor,
-               LAMMPSDumpFile=fileVels,widthWin=widthWin,
-               LAMMPSRestartFile='270115a.quenched.restart',
-               NChunks=200,chunkSize=50000,
-               backupPrefix=fileprefix,
-               reCalcVels=False,
-               reCalcFC=False)
+pP = SHCPostProc(
+    fileCompactVels,
+    KijFilePrefix,
+    dt_md=dt_md,
+    scaleFactor=scaleFactor,
+    LAMMPSDumpFile=fileVels,
+    widthWin=widthWin,
+    LAMMPSRestartFile="270115a.quenched.restart",
+    NChunks=200,
+    chunkSize=50000,
+    backupPrefix=fileprefix,
+    reCalcVels=False,
+    reCalcFC=False,
+)
 # Post-process
-pP.postProcess() # All variables will be contained in the object pP
+pP.postProcess()  # All variables will be contained in the object pP
 
 # Various output options
 
 # Pickling the post-processing instance
 import cPickle as pickle
-with open(outputFolder+'/'+fileprefix+'_PP.pckl','w') as f:
-    pickle.dump(pP,f)
-    
+
+with open(outputFolder + "/" + fileprefix + "_PP.pckl", "w") as f:
+    pickle.dump(pP, f)
+
 # Saving into numpy files
-np.save(outputFolder+'/'+fileprefix+'_oms.npy',pP.oms_fft)
-np.save(outputFolder+'/'+fileprefix+'_SHC.npy',pP.SHC_smooth)
+np.save(outputFolder + "/" + fileprefix + "_oms.npy", pP.oms_fft)
+np.save(outputFolder + "/" + fileprefix + "_SHC.npy", pP.SHC_smooth)
 
 # Saving to file
-print "Saving to file "+outputFolder+'/'+fileprefix+'_SHC.txt'
-np.savetxt(outputFolder+'/'+fileprefix+'_SHC.txt',np.column_stack((pP.oms_fft,pP.SHC_smooth)))
+print("Saving to file " + outputFolder + "/" + fileprefix + "_SHC.txt")
+np.savetxt(
+    outputFolder + "/" + fileprefix + "_SHC.txt",
+    np.column_stack((pP.oms_fft, pP.SHC_smooth)),
+)
 
-command=["tar","-czvf",fileprefix+'_tar.tgz',outputFolder]
-print " ".join(command)
+command = ["tar", "-czvf", fileprefix + "_tar.tgz", outputFolder]
+print(" ".join(command))
 call(command)
 
 # Plotting if available

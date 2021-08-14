@@ -6,5 +6,5 @@ def main():
     print("Not done yet!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -37,7 +37,17 @@ def iterateFile(lmp, filename):
 def write_initial_positions_file(filename):
     mass = 28.0
     rho = 2.291  # Density in g/cm^3
-    n_atoms = np.int(np.round(rho * 1e-3 / 1e-6 * SYSTEM_LENGTH * SYSTEM_WIDTH ** 2 * 1e-30 / (mass * 1.66e-27)))
+    n_atoms = np.int(
+        np.round(
+            rho
+            * 1e-3
+            / 1e-6
+            * SYSTEM_LENGTH
+            * SYSTEM_WIDTH ** 2
+            * 1e-30
+            / (mass * 1.66e-27)
+        )
+    )
     ab = atombox(SYSTEM_LENGTH, SYSTEM_WIDTH, n_atoms)
     ab.fillBox(seed=1234)
     ab.writeToFile(filename, mass)
@@ -73,8 +83,8 @@ def perform_simulation(folder, restart_file):
 
 def compute_sdhc(folder, restart_file):
 
-    compact_velocities_file = os.path.join(folder, 'vels.dat.compact')
-    atomic_velocities_file = os.path.join(folder, 'simu.vels.dat')
+    compact_velocities_file = os.path.join(folder, "vels.dat.compact")
+    atomic_velocities_file = os.path.join(folder, "simu.vels.dat")
     frequency_window_width = 0.5e12
 
     backup_prefix = os.path.join(folder, "backup")
@@ -82,18 +92,20 @@ def compute_sdhc(folder, restart_file):
     unit_scaling_factor = 1.602e-19 / 1e-20 * 1e4
     md_timestep = 2.5e-15
 
-    postprocessor = SHCPostProc(compact_velocities_file,
-                                force_constant_file_prefix,
-                                dt_md=md_timestep,
-                                scaleFactor=unit_scaling_factor,
-                                LAMMPSDumpFile=atomic_velocities_file,
-                                widthWin=frequency_window_width,
-                                NChunks=20,
-                                chunkSize=50000,
-                                backupPrefix=backup_prefix,
-                                LAMMPSRestartFile=restart_file,
-                                reCalcVels=True,
-                                reCalcFC=True)
+    postprocessor = SHCPostProc(
+        compact_velocities_file,
+        force_constant_file_prefix,
+        dt_md=md_timestep,
+        scaleFactor=unit_scaling_factor,
+        LAMMPSDumpFile=atomic_velocities_file,
+        widthWin=frequency_window_width,
+        NChunks=20,
+        chunkSize=50000,
+        backupPrefix=backup_prefix,
+        LAMMPSRestartFile=restart_file,
+        reCalcVels=True,
+        reCalcFC=True,
+    )
 
     postprocessor.postProcess()
     return postprocessor
@@ -111,8 +123,8 @@ def main(folder):
     if not os.path.exists(folder):
         os.mkdir(folder)
 
-    atom_positions_file = os.path.join(folder, 'Si.dat')
-    restart_file = os.path.join(folder, 'quenched.restart')
+    atom_positions_file = os.path.join(folder, "Si.dat")
+    restart_file = os.path.join(folder, "quenched.restart")
 
     write_initial_positions_file(atom_positions_file)
 
@@ -126,16 +138,20 @@ def main(folder):
 
     # Pickling the post-processing object into file
     import cPickle as pickle
-    with open(os.path.join(folder, 'PP.pckl'), 'w') as f:
+
+    with open(os.path.join(folder, "PP.pckl"), "w") as f:
         pickle.dump(postprocessor, f)
 
-    # Saving into numpy files 
-    np.save(os.path.join(folder, 'oms.npy'), postprocessor.oms_fft)
-    np.save(os.path.join(folder, 'SHC.npy'), postprocessor.SHC_smooth)
+    # Saving into numpy files
+    np.save(os.path.join(folder, "oms.npy"), postprocessor.oms_fft)
+    np.save(os.path.join(folder, "SHC.npy"), postprocessor.SHC_smooth)
 
     # Saving the frequencies and heat currents to file
-    np.savetxt(os.path.join(folder, 'SHC.txt'), np.column_stack((postprocessor.oms_fft, postprocessor.SHC_smooth)))
+    np.savetxt(
+        os.path.join(folder, "SHC.txt"),
+        np.column_stack((postprocessor.oms_fft, postprocessor.SHC_smooth)),
+    )
 
 
-if __name__ == '__main__':
-    main(folder='lammps-output')
+if __name__ == "__main__":
+    main(folder="lammps-output")

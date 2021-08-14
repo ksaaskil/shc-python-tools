@@ -15,6 +15,7 @@ class fcCalc:
     :param restartfile: LAMMPS restart file (TODO What is this)
     :type restartfile: str
     """
+
     def __init__(self, fileprefix, restartfile):
         self.fileprefix = fileprefix
         self.restartfile = restartfile
@@ -32,7 +33,9 @@ class fcCalc:
     def __exit__(self, exc_type, exc_val, exc_tb):
         return False
 
-    def preparelammps(self, pair_style=None, pair_coeff=None, x_interface=0.5, w_interface=3.0):
+    def preparelammps(
+        self, pair_style=None, pair_coeff=None, x_interface=0.5, w_interface=3.0
+    ):
         """
         Prepare the LAMMPS object for computing force constants.
 
@@ -47,15 +50,16 @@ class fcCalc:
         :return: None
         """
         from lammps import lammps
+
         restartfile = self.restartfile
         self.lmp = lammps()
         self.lmp.command("atom_modify map hash")
-        self.lmp.command('read_restart ' + restartfile + ' remap')
+        self.lmp.command("read_restart " + restartfile + " remap")
 
         if pair_style is not None:
-            self.lmp.command('pair_style ' + pair_style)
+            self.lmp.command("pair_style " + pair_style)
         if pair_coeff is not None:
-            self.lmp.command('pair_coeff ' + pair_coeff)
+            self.lmp.command("pair_coeff " + pair_coeff)
 
         self.lmp.command("fix NVE all nve")
 
@@ -80,7 +84,7 @@ class fcCalc:
         coords_data = self.lmp.gather_atoms("x", 1, 3)
 
         # Coordinates in a numpy array
-        coords = np.array(coords_data[:], dtype=np.dtype('f8'))
+        coords = np.array(coords_data[:], dtype=np.dtype("f8"))
         self.natoms = self.lmp.extract_global("natoms", 0)
 
         coords = np.reshape(coords, (self.natoms, 3))
@@ -119,7 +123,9 @@ class fcCalc:
         inds_left = self.inds_left
         inds_right = self.inds_right
         # One-dimensional indices of the atoms on the right side
-        inds_right_1d = np.concatenate((3 * inds_right, 3 * inds_right + 1, 3 * inds_right + 2))
+        inds_right_1d = np.concatenate(
+            (3 * inds_right, 3 * inds_right + 1, 3 * inds_right + 2)
+        )
         inds_right_1d = np.sort(inds_right_1d)
 
         Kij = np.zeros((len(inds_left) * 3, len(inds_right) * 3))
@@ -151,7 +157,7 @@ class fcCalc:
                 fc1 = lmp.gather_atoms("f", 1, 3)
                 # print "1=",fc1[0]
                 # print type(fc1)
-                fc1 = np.array(fc1, dtype=np.dtype('f8'))
+                fc1 = np.array(fc1, dtype=np.dtype("f8"))
                 # print "2=",fc1[0]
                 # print fc1[index]
                 # Move to negative direction
@@ -159,10 +165,12 @@ class fcCalc:
                 lmp.scatter_atoms("x", 1, 3, xc)
                 lmp.command("run 0 post no")
                 fc2 = lmp.gather_atoms("f", 1, 3)
-                fc2 = np.array(fc2, dtype=np.dtype('f8'))
+                fc2 = np.array(fc2, dtype=np.dtype("f8"))
                 # print fc2[index]
                 # Fill one row of spring constant matrix
-                Kij[3 * i1 + direction, :] = (fc1[inds_right_1d] - fc2[inds_right_1d]) / (2.0 * hstep)
+                Kij[3 * i1 + direction, :] = (
+                    fc1[inds_right_1d] - fc2[inds_right_1d]
+                ) / (2.0 * hstep)
                 xc[index] += hstep
                 lmp.scatter_atoms("x", 1, 3, xc)
 
@@ -174,9 +182,9 @@ class fcCalc:
 
         :return: None
         """
-        np.save(self.fileprefix + '.Kij.npy', self.Kij)
-        np.save(self.fileprefix + '.ids_L.npy', self.ids_L)
-        np.save(self.fileprefix + '.ids_R.npy', self.ids_R)
+        np.save(self.fileprefix + ".Kij.npy", self.Kij)
+        np.save(self.fileprefix + ".ids_L.npy", self.ids_L)
+        np.save(self.fileprefix + ".ids_R.npy", self.ids_R)
 
 
 if __name__ == "__main__":
@@ -188,11 +196,13 @@ if __name__ == "__main__":
     # args=parser.parse_args()
     # fileprefix=args.filePrefix
     # hstep=args.hstep
-    fileprefix = '270115a'
-    restartfile = fileprefix + '.quenched.restart'
+    fileprefix = "270115a"
+    restartfile = fileprefix + ".quenched.restart"
     hstep = 0.001
 
     with fcCalc(fileprefix, restartfile) as fc:
-        fc.preparelammps(pair_style='sw', pair_coeff='* * Si_vbwm.sw Si', w_interface=3.0)
+        fc.preparelammps(
+            pair_style="sw", pair_coeff="* * Si_vbwm.sw Si", w_interface=3.0
+        )
         fc.fcCalc(hstep)
         fc.writeToFile()
