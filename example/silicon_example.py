@@ -63,42 +63,42 @@ def write_initial_positions_file(filename: Path):
     )
 
 
-def perform_quench(folder, atom_positions_file, restart_file):
+def perform_quench(folder: Path, lammps_data_file: Path, restart_file: Path):
     lmp = lammps()
     file_prefix = os.path.join(folder, "quench")
-    lmp.command("variable filename string '" + file_prefix + "'")
-    lmp.command("variable datafile string '" + atom_positions_file + "'")
-    lmp.command("variable restartfile string '" + restart_file + "'")
+    lmp.command(f"variable filename string '{file_prefix}'")
+    lmp.command(f"variable datafile string '{lammps_data_file}'")
+    lmp.command(f"variable restartfile string '{restart_file}'")
 
-    lmp.command("variable steps_heating equal {}".format(QUENCH_STEPS_HEATING))
-    lmp.command("variable steps_quench equal {}".format(QUENCH_STEPS_QUENCH))
-    lmp.command("variable steps_cooled equal {}".format(QUENCH_STEPS_COOLED))
+    lmp.command(f"variable steps_heating equal {QUENCH_STEPS_HEATING}")
+    lmp.command(f"variable steps_quench equal {QUENCH_STEPS_QUENCH}")
+    lmp.command(f"variable steps_cooled equal {QUENCH_STEPS_COOLED}")
 
     iterateFile(lmp, QUENCH_LMP_PATH)
     lmp.close()
 
 
-def perform_simulation(folder, restart_file):
-    file_prefix = os.path.join(folder, "simu")
+def perform_simulation(folder: Path, restart_file: Path):
+    file_prefix = folder.joinpath("simu")
     lmp = lammps()
-    lmp.command("variable filename string '" + file_prefix + "'")
-    lmp.command("variable restartfile string '" + restart_file + "'")
-    lmp.command("variable steps_equil equal {}".format(SIMU_STEPS_EQUIL))
-    lmp.command("variable steps_steady equal {}".format(SIMU_STEPS_STEADY))
-    lmp.command("variable steps_simu equal {}".format(SIMU_STEPS_SIMULATION))
+    lmp.command(f"variable filename string '{file_prefix}'")
+    lmp.command(f"variable restartfile string '{restart_file}'")
+    lmp.command(f"variable steps_equil equal {SIMU_STEPS_EQUIL}")
+    lmp.command(f"variable steps_steady equal {SIMU_STEPS_STEADY}")
+    lmp.command(f"variable steps_simu equal {SIMU_STEPS_SIMULATION}")
 
     iterateFile(lmp, SIMULATION_LMP_PATH)
     lmp.close()
 
 
-def compute_sdhc(folder, restart_file):
+def compute_sdhc(folder: Path, restart_file: Path):
 
-    compact_velocities_file = os.path.join(folder, "vels.dat.compact")
-    atomic_velocities_file = os.path.join(folder, "simu.vels.dat")
+    compact_velocities_file = folder.joinpath("vels.dat.compact")
+    atomic_velocities_file = folder.joinpath("simu.vels.dat")
     frequency_window_width = 0.5e12
 
-    backup_prefix = os.path.join(folder, "backup")
-    force_constant_file_prefix = os.path.join(folder, "force_constants")
+    backup_prefix = folder.joinpath("backup")
+    force_constant_file_prefix = folder.joinpath("force_constants")
     unit_scaling_factor = 1.602e-19 / 1e-20 * 1e4
     md_timestep = 2.5e-15
 
@@ -134,13 +134,13 @@ def main(folder: Path = Path("lammps-output")):
     write_initial_positions_file(atom_positions_file)
 
     # Do quenching
-    restart_file = str(folder.joinpath("quenched.restart"))
-    perform_quench(str(folder), atom_positions_file, restart_file)
+    restart_file = folder.joinpath("quenched.restart")
+    perform_quench(folder, atom_positions_file, restart_file)
 
     # Gather data from simulation
-    perform_simulation(str(folder), restart_file)
+    perform_simulation(folder, restart_file)
 
-    postprocessor = compute_sdhc(str(folder), restart_file)
+    postprocessor = compute_sdhc(folder, restart_file)
 
     # Saving into numpy files
     np.save(folder.joinpath("oms.npy"), postprocessor.oms_fft)
