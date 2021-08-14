@@ -12,3 +12,4 @@ compactify_vels
 .DS_Store
 .idea/
 sdhc.egg-info/
+.vscode/
