@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# Kimmo Sääskilahti, 2015
 from lammps import lammps
 import numpy as np
 

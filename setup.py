@@ -1,5 +1,4 @@
 from setuptools import find_packages, setup, Command
-import stat
 import os
 from shutil import rmtree
 import sys
@@ -12,7 +11,7 @@ DESCRIPTION = (
 )
 URL = "https://github.com/ksaaskil/shc-python-tools"
 AUTHOR = 'Kimmo S"a"askilahti'
-REQUIRES_PYTHON = ">=3.8.1"
+REQUIRES_PYTHON = ">=3.7.0"
 SRC_DIR = "sdhc"  # Relative location wrt setup.py
 
 # Required packages.

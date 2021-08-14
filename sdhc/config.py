@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# Kimmo Sääskilahti, 2021
 import logging
 
 

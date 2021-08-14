@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Kimmo Sääskilahti, 2015
+# Kimmo Sääskilahti, 2021
 from datetime import date
 from pathlib import Path
 

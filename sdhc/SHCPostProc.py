@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# Kimmo Sääskilahti, 2015
 from dataclasses import dataclass
 import os
 import subprocess

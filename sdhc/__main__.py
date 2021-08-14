@@ -1,9 +1,5 @@
-from .SHCPostProc import *
-from .fcCalc import *
-
-
 def main():
-    print("Not done yet!")
+    raise NotImplementedError("Not done yet!")
 
 
 if __name__ == "__main__":
