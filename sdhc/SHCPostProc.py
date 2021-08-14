@@ -1,6 +1,9 @@
 from __future__ import division, print_function
 import numpy as np
 
+from sdhc.fcCalc import fcCalc
+
+
 __all__ = ["SHCPostProc"]
 
 
@@ -133,11 +136,10 @@ class SHCPostProc(object):
     def __enter__(self):
         return self
 
-    def __exit__(self, t1, t2, t3):
-        return False
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
 
     def _calcFC(self, fileprefix, restartfile):
-        from fcCalc import fcCalc
 
         with fcCalc(fileprefix, restartfile) as fc:
             fc.preparelammps(

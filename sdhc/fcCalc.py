@@ -1,3 +1,4 @@
+from lammps import lammps
 import numpy as np
 
 __all__ = ["fcCalc"]
@@ -31,7 +32,7 @@ class fcCalc:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        return False
+        pass
 
     def preparelammps(
         self, pair_style=None, pair_coeff=None, x_interface=0.5, w_interface=3.0
@@ -49,7 +50,6 @@ class fcCalc:
         :type w_interface: float, optional
         :return: None
         """
-        from lammps import lammps
 
         restartfile = self.restartfile
         self.lmp = lammps()
@@ -63,8 +63,8 @@ class fcCalc:
 
         self.lmp.command("fix NVE all nve")
 
-        xlo = self.lmp.extract_global("boxxlo", 1)
-        xhi = self.lmp.extract_global("boxxhi", 1)
+        xlo = self.lmp.extract_global("boxxlo")
+        xhi = self.lmp.extract_global("boxxhi")
         print("Box is [%f,%f]." % (xlo, xhi))
 
         # The position of the interface, at the middle by default (0.5)
@@ -85,7 +85,7 @@ class fcCalc:
 
         # Coordinates in a numpy array
         coords = np.array(coords_data[:], dtype=np.dtype("f8"))
-        self.natoms = self.lmp.extract_global("natoms", 0)
+        self.natoms = self.lmp.extract_global("natoms")
 
         coords = np.reshape(coords, (self.natoms, 3))
 
