@@ -4,6 +4,7 @@ import os
 from shutil import rmtree
 import sys
 
+
 # Package meta-data.
 NAME = "sdhc"
 DESCRIPTION = (

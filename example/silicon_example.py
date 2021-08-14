@@ -7,13 +7,15 @@ from randomAtomBox import atombox
 from sdhc import SHCPostProc
 from lammps import lammps
 
-QUENCH_STEPS_HEATING = 5e5
-QUENCH_STEPS_QUENCH = 1e6
-QUENCH_STEPS_COOLED = 5e5
+SCALE = 100
 
-SIMU_STEPS_EQUIL = 5e5
-SIMU_STEPS_STEADY = 1e6
-SIMU_STEPS_SIMULATION = 1e6
+QUENCH_STEPS_HEATING = 5e5 / SCALE
+QUENCH_STEPS_QUENCH = 1e6 / SCALE
+QUENCH_STEPS_COOLED = 5e5 / SCALE
+
+SIMU_STEPS_EQUIL = 5e5 / SCALE
+SIMU_STEPS_STEADY = 1e6 / SCALE
+SIMU_STEPS_SIMULATION = 1e6 / SCALE
 
 SYSTEM_LENGTH = 200
 SYSTEM_WIDTH = 20
@@ -37,7 +39,7 @@ def iterateFile(lmp, filename):
 def write_initial_positions_file(filename):
     mass = 28.0
     rho = 2.291  # Density in g/cm^3
-    n_atoms = np.int(
+    n_atoms = int(
         np.round(
             rho
             * 1e-3
@@ -137,10 +139,10 @@ def main(folder):
     postprocessor = compute_sdhc(folder, restart_file)
 
     # Pickling the post-processing object into file
-    import cPickle as pickle
+    # import cPickle as pickle
 
-    with open(os.path.join(folder, "PP.pckl"), "w") as f:
-        pickle.dump(postprocessor, f)
+    # with open(os.path.join(folder, "PP.pckl"), "w") as f:
+    #     pickle.dump(postprocessor, f)
 
     # Saving into numpy files
     np.save(os.path.join(folder, "oms.npy"), postprocessor.oms_fft)
