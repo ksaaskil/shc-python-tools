@@ -91,8 +91,8 @@ Download the tarball from [LAMMPS downloads](https://www.lammps.org/download.htm
 ```bash
 $ mkdir ~/lammps
 $ cd ~/lammps
-$ wget https://download.lammps.org/tars/lammps-stable.tar.gz
-$ tar -xvf lammps-stable.tar.gz
+$ wget https://download.lammps.org/tars/lammps.tar.gz
+$ tar -xvf lammps.tar.gz
 $ cd lammps-29Oct20
 ```
 
@@ -104,11 +104,12 @@ CC =            clang++ -std=c++11 -stdlib=libc++
 LINK =          clang++
 ```
 
-Build the executable:
+Build as shared library and [include any required packages](https://docs.lammps.org/Build_package.html):
 
 ```bash
 $ cd src
-$ make serial
+$ make yes-MANYBODY
+$ make mode=shared serial
 ```
 
 Test the executable:
@@ -121,29 +122,24 @@ Make the executable available in your `PATH`:
 
 ```bash
 # Assuming you have ~/bin in your PATH
-$ ln -sf ~/lammps/lammps-29Oct20/src/lmp_serial ~/bin/lmp_serial
-```
-
-Build as shared library and [include any required packages](https://docs.lammps.org/Build_package.html):
-
-```bash
-$ make yes-MANYBODY
-$ make mode=shared serial
+$ ln -sf ${LAMMPS_PATH}/src/lmp_serial ~/bin/lmp_serial
 ```
 
 Add LAMMPS to `LD_LIBRARY_PATH`, `DYLD_LIBRARY_PATH` and `PYTHONPATH`:
 
 ```bash
 # .bash_profile
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/lammps/lammps-29Oct20/src
-export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${HOME}/lammps/lammps-29Oct20/src
-export PYTHONPATH=${PYTHONPATH}:${HOME}/lammps/lammps-29Oct20/python
+export LAMMPS_PATH=${HOME}/lammps/lammps-30Jul2021
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${LAMMPS_PATH}/src
+export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${LAMMPS_PATH}/src
+export PYTHONPATH=${PYTHONPATH}:${LAMMPS_PATH}/python
+export PATH=$PATH:${HOME}/git/shc-python-tools/scripts
 ```
 
 For some reason, setting library paths didn't work as `lammps` Python package was searching for the `liblammps.so` file in the folder of the Python package. So I added a soft link:
 
 ```bash
-$ ln -sf ${HOME}/lammps/lammps-29Oct20/src/liblammps.so ${HOME}/lammps/lammps-29Oct20/python/liblammps.so
+$ ln -sf ${LAMMPS_PATH}/src/liblammps.so ${LAMMPS_PATH}/python/lammps/liblammps.so
 ```
 
 Now test running LAMMPS from Python:
