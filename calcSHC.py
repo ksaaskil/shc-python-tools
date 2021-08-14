@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 # Kimmo Sääskilahti, 2015
 from __future__ import division
+from subprocess import call
+
 import numpy as np
-from SHCPostProc import SHCPostProc
+
+from sdhc.SHCPostProc import SHCPostProc
 
 fileprefix = "270315a"
 outputFolder = "DATA/" + fileprefix + "_tar"
 
 # Create the data folder
-from subprocess import call
 
 command = ["mkdir", "-p", outputFolder]
 print(" ".join(command))
@@ -45,14 +47,6 @@ pP = SHCPostProc(
 )
 # Post-process
 pP.postProcess()  # All variables will be contained in the object pP
-
-# Various output options
-
-# Pickling the post-processing instance
-import cPickle as pickle
-
-with open(outputFolder + "/" + fileprefix + "_PP.pckl", "w") as f:
-    pickle.dump(pP, f)
 
 # Saving into numpy files
 np.save(outputFolder + "/" + fileprefix + "_oms.npy", pP.oms_fft)
