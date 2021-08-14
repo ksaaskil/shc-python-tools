@@ -62,14 +62,15 @@ class SHCPostProc:
         self,
         compactVelocityFile: str,
         KijFilePrefix: str,
-        reCalcVels=False,
-        reCalcFC=False,
-        dt_md=1.0,
-        scaleFactor=1.0,
+        reCalcVels: bool = False,
+        reCalcFC: bool = False,
+        dt_md: float = 1.0,
+        scaleFactor: float = 1.0,
         LAMMPSDumpFile: str = None,
         LAMMPSRestartFile: str = None,
         widthWin: float = 1.0,
         chunkSize: int = 50000,
+        NChunks: int = 20,
         backupPrefix: str = None,
         hstep: float = 0.001,
     ):
@@ -99,7 +100,7 @@ class SHCPostProc:
         self.backupPrefix = backupPrefix
         self.widthWin = widthWin
         self.chunkSize = chunkSize
-        self.NChunks = 20
+        self.NChunks = NChunks
         self.hstep = hstep
 
         if self.reCalcVels or not os.path.isfile(
