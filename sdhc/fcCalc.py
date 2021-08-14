@@ -53,7 +53,7 @@ class fcCalc:
 
         restartfile = self.restartfile
         self.lmp = lammps()
-        self.lmp.command("atom_modify map array")
+
         print(f"Reading restart file: {restartfile}")
         self.lmp.command(f"read_restart {restartfile} remap")
 
@@ -156,37 +156,36 @@ class fcCalc:
                 # Index of the displaced degree of freedom
                 index = 3 * ind1 + direction
                 # Get the coordinates from LAMMPS
+                # ids = lmp.gather_atoms("id", 0, 1)
+
                 xc = lmp.gather_atoms("x", 1, 3)
 
                 assert xc is not None
-                # print(xc[index])
 
                 # Move the atom
                 xc[index] += hstep
-                # print(xc[index])
 
                 # Communicate to LAMMPS
                 # print("Scattering to", xc)
-                # FIXME This warns of library error, why?
+                # This will fail with a warning if `atom_modify map` has not been set!
                 lmp.scatter_atoms("x", 1, 3, xc)
-                # assert False
+
                 # Run LAMMPS to update the forces
                 lmp.command("run 0 post no")
                 # Gather the forces
                 fc1 = lmp.gather_atoms("f", 1, 3)
                 assert fc1 is not None
-                # print "1=",fc1[0]
-                # print type(fc1)
+
                 fc1 = np.array(fc1, dtype=np.dtype("f8"))
-                # print "2=",fc1[0]
-                # print fc1[index]
+
                 # Move to negative direction
                 xc[index] -= 2 * hstep
                 lmp.scatter_atoms("x", 1, 3, xc)
                 lmp.command("run 0 post no")
+
                 fc2 = lmp.gather_atoms("f", 1, 3)
                 fc2 = np.array(fc2, dtype=np.dtype("f8"))
-                # print fc2[index]
+
                 # Fill one row of spring constant matrix
                 Kij[3 * i1 + direction, :] = (
                     fc1[inds_right_1d] - fc2[inds_right_1d]

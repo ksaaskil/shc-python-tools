@@ -7,7 +7,7 @@ from randomAtomBox import atombox
 from sdhc import SHCPostProc
 from lammps import lammps
 
-SCALE = 100
+SCALE = 10
 
 QUENCH_STEPS_HEATING = 5e5 / SCALE
 QUENCH_STEPS_QUENCH = 1e6 / SCALE

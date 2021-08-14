@@ -12,6 +12,9 @@ boundary p p p
 units metal
 atom_style atomic
 
+# This is needed to run scatter_atoms later
+atom_modify map yes
+
 pair_style sw
 read_data ${datafile}
 pair_coeff * * Si_vbwm.sw Si  

@@ -9,9 +9,10 @@ These codes are meant to help anyone interested in implementing the spectral hea
 
 See detailed API documentation in [readthedocs.io](https://shc-python-tools.readthedocs.io/en/latest/).
 
-## Disclaimer
+## Caveats
 
-> As of August 2021, calculating force constants doesn't work due to an issue in calling `scatter_atoms` from `fcCalc.py`.
+- This is research code and not unit-tested
+- The logic how atom IDs are tracked throughtout the process is fragile. For example, the interface atoms are computed independently both when starting the LAMMPS simulation (to know which velocities to dump) and when calculating force constants afterwards. Currently these atom IDs must match.
 
 ## Installation
 
@@ -146,16 +147,18 @@ For some reason, setting library paths didn't work as `lammps` Python package wa
 $ ln -sf ${LAMMPS_PATH}/src/liblammps.so ${LAMMPS_PATH}/python/lammps/liblammps.so
 ```
 
+I also needed to update `python/core.py` as follows:
+
+```python
+  if platform.system() == "Darwin":
+     # lib_ext = ".dylib"
+     lib_ext = ".so"
+```
+
 Now test running LAMMPS from Python:
 
 ```python
 >>> from lammps import lammps
 >>> lmp = lammps()
-LAMMPS (29 Oct 2020)
+LAMMPS (30 Jul 2021)
 ```
-
-## TODO
-- Documentation for calcSHC.py
-- Documentation for the example
-- Preparation of visualization files
-- Documentation for fcCalc.py

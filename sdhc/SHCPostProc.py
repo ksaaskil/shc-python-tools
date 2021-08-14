@@ -212,9 +212,13 @@ class SHCPostProc(object):
         f = open(self.compactVelocityFile, "r")
         s = f.readline().split()
         NAtoms = int(s[1])
-        if NAtoms != self.NL + self.NR:
+
+        assert self.NL is not None
+        assert self.NR is not None
+
+        if NAtoms != (self.NL + self.NR):
             raise ValueError(
-                "Mismatch in the numbers of atoms in the read velocity file and the used force constant file!"
+                f"Mismatch in the numbers of atoms in the read velocity file and the used force constant file: velocity file has {NAtoms} and force constants has: {self.NL}x{self.NR} "
             )
 
         s = f.readline()
