@@ -9,6 +9,10 @@ These codes are meant to help anyone interested in implementing the spectral hea
 
 See detailed API documentation in [readthedocs.io](https://shc-python-tools.readthedocs.io/en/latest/).
 
+## Disclaimer
+
+> As of August 2021, calculating force constants doesn't work due to an issue in calling `scatter_atoms` from `fcCalc.py`.
+
 ## Installation
 
 ```bash
