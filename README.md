@@ -12,10 +12,11 @@ See detailed API documentation in [readthedocs.io](https://shc-python-tools.read
 ## Contents
 
 The actual library for computing spectral heat current distributions is found
-in the [sdhc](./sdhc) folder. It contains:
-- [SHCPostProc.py](./sdhc/SHCPostProc.py): Python class for performing the post-processing
-- [calcFC.py](./sdhc/calcFC.py): Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
-- [compactify_vels.cpp](./sdhc/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `shc-tools` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable CC).
+in the [`sdhc`](./sdhc) folder. It contains:
+
+- [`SHCPostProc.py`](./sdhc/SHCPostProc.py): Python class for performing the post-processing
+- [`calcFC.py`](./sdhc/calcFC.py): Class for calculating the force constants (note that the definition of the "left" and "right" interfaces must be the same in the NEMD simulation and in the calculation of the force constants)
+- [`compactify_vels.cpp`](./sdhc/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `shc-tools` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable CC).
 
 In addition, the root directory contains the script [calcSHC.py](./calcSHC.py) demonstrating how the post-processing class is used and how the data could be saved to file.
 
@@ -57,6 +58,75 @@ Folder [example](./example) contains a self-contained example for calculating th
 See [here](https://lammps.sandia.gov/doc/Build_package.html) how to include packages in your
 LAMMPS build.
 - You need to have [numpy](https://docs.scipy.org/doc/numpy/index.html) installed.
+
+## Installation on macOS (2021)
+
+Download the tarball from [LAMMPS downloads](https://www.lammps.org/download.html)
+
+```bash
+$ mkdir ~/lammps
+$ cd ~/lammps
+$ wget https://download.lammps.org/tars/lammps-stable.tar.gz
+$ tar -xvf lammps-stable.tar.gz
+$ cd lammps-29Oct20
+```
+
+Edit the target `Makefile` such as `src/MAKE/Makefile.serial` to use `clang++`:
+
+```Makefile
+# Makefile.serial
+CC =            clang++ -std=c++11 -stdlib=libc++
+LINK =          clang++
+```
+
+Build the executable:
+
+```bash
+$ cd src
+$ make serial
+```
+
+Test the executable:
+
+```bash
+$ ./lmp_serial -i ../examples/min/in.min
+```
+
+Make the executable available in your `PATH`:
+
+```bash
+# Assuming you have ~/bin in your PATH
+$ ln -sf ~/lammps/lammps-29Oct20/src/lmp_serial ~/bin/lmp_serial
+```
+
+Build as shared library:
+
+```bash
+$ make mode=shared serial
+```
+
+Add LAMMPS to `LD_LIBRARY_PATH`, `DYLD_LIBRARY_PATH` and `PYTHONPATH`:
+
+```bash
+# .bash_profile
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${HOME}/lammps/lammps-29Oct20/src
+export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${HOME}/lammps/lammps-29Oct20/src
+export PYTHONPATH=${PYTHONPATH}:${HOME}/lammps/lammps-29Oct20/python
+```
+
+For some reason, setting library paths didn't work as `lammps` Python package was searching for the `liblammps.so` file in the folder of the Python package. So I added a soft link:
+
+```bash
+$ ln -sf ${HOME}/lammps/lammps-29Oct20/src/liblammps.so ${HOME}/lammps/lammps-29Oct20/python/liblammps.so
+```
+
+Now test running LAMMPS from Python:
+
+```python
+>>> from lammps import lammps
+>>> lmp = lammps()
+LAMMPS (29 Oct 2020)
+```
 
 ## TODO
 - Documentation for calcSHC.py
