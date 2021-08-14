@@ -8,6 +8,7 @@ from sdhc import SHCPostProc
 from sdhc.utils import make_atombox
 from lammps import lammps
 
+# Speed-up for small machines, use '1' for high-quality data
 SCALE = 10
 
 QUENCH_STEPS_HEATING = 5e5 / SCALE
@@ -63,7 +64,7 @@ def write_initial_positions_file(filename: Path):
     )
 
 
-def perform_quench(folder: Path, lammps_data_file: Path, restart_file: Path):
+def do_quench(folder: Path, lammps_data_file: Path, restart_file: Path):
     lmp = lammps()
     file_prefix = os.path.join(folder, "quench")
     lmp.command(f"variable filename string '{file_prefix}'")
@@ -78,7 +79,7 @@ def perform_quench(folder: Path, lammps_data_file: Path, restart_file: Path):
     lmp.close()
 
 
-def perform_simulation(folder: Path, restart_file: Path):
+def do_simulation(folder: Path, restart_file: Path):
     file_prefix = folder.joinpath("simu")
     lmp = lammps()
     lmp.command(f"variable filename string '{file_prefix}'")
@@ -135,10 +136,10 @@ def main(folder: Path = Path("lammps-output")):
 
     # Do quenching
     restart_file = folder.joinpath("quenched.restart")
-    perform_quench(folder, atom_positions_file, restart_file)
+    do_quench(folder, atom_positions_file, restart_file)
 
     # Gather data from simulation
-    perform_simulation(folder, restart_file)
+    do_simulation(folder, restart_file)
 
     postprocessor = compute_sdhc(folder, restart_file)
 
@@ -146,11 +147,15 @@ def main(folder: Path = Path("lammps-output")):
     np.save(folder.joinpath("oms.npy"), postprocessor.oms_fft)
     np.save(folder.joinpath("SHC.npy"), postprocessor.SHC_smooth)
 
-    # Saving the frequencies and heat currents to file
+    # Saving the frequencies and heat currents to CSV file
     np.savetxt(
-        folder.joinpath("SHC.txt"),
+        folder.joinpath("SHC.csv"),
         np.column_stack((postprocessor.oms_fft, postprocessor.SHC_smooth)),
+        delimiter=",",
     )
+
+    # Read back using e.g. pandas
+    # df = pd.read_csv(CSV_FILE, names=["omega", "sdhc"])
 
 
 if __name__ == "__main__":

@@ -17,7 +17,16 @@ SRC_DIR = "sdhc"  # Relative location wrt setup.py
 # Required packages.
 REQUIRED = ["numpy"]
 
-DEV = ["black==21.7b0", "flake8", "mypy", "pytest", "sphinx", "sphinx_rtd_theme"]
+DEV = [
+    "black==21.7b0",
+    "flake8",
+    "mypy",
+    "pytest",
+    "sphinx",
+    "sphinx_rtd_theme",
+    "matplotlib",
+    "pandas",
+]
 
 EXTRAS = {"dev": DEV}
 
