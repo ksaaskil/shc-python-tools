@@ -59,7 +59,7 @@ class SHCPostProc(object):
         KijFilePrefix,
         reCalcVels=False,
         reCalcFC=False,
-        **args
+        **args,
     ):
         # Attributes set by positional arguments
         self.compactVelocityFile = compactVelocityFile
@@ -131,6 +131,7 @@ class SHCPostProc(object):
                 )
             self._calcFC(self.KijFilePrefix, self.LAMMPSRestartFile)
         else:  # Load the force constants from file
+            print(f"Loading force constants from: {self.KijFilePrefix}")
             self._loadFC(self.KijFilePrefix)
 
     def __enter__(self):
@@ -193,7 +194,7 @@ class SHCPostProc(object):
         call(command)
 
     def _smoothen(self, df, func, widthWin):
-        Nwindow = np.ceil(widthWin / df)
+        Nwindow = int(np.ceil(widthWin / df))
         daniellWindow = np.ones(Nwindow) / Nwindow
         # daniellWindow/=np.sum(daniellWindow)
         # Smooth the value

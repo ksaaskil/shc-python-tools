@@ -53,8 +53,9 @@ class fcCalc:
 
         restartfile = self.restartfile
         self.lmp = lammps()
-        self.lmp.command("atom_modify map hash")
-        self.lmp.command("read_restart " + restartfile + " remap")
+        self.lmp.command("atom_modify map array")
+        print(f"Reading restart file: {restartfile}")
+        self.lmp.command(f"read_restart {restartfile} remap")
 
         if pair_style is not None:
             self.lmp.command("pair_style " + pair_style)
@@ -63,10 +64,17 @@ class fcCalc:
 
         self.lmp.command("fix NVE all nve")
 
-        xlo = self.lmp.extract_global("boxxlo")
-        xhi = self.lmp.extract_global("boxxhi")
+        assert self.lmp is not None
+        # xlo = self.lmp.extract_box.extract_global("boxxlo", 1)
+        # xhi = self.lmp.extract_global("boxxhi", 1)
+        boxlo, boxhi, xy, yz, xz, periodicity, box_change = self.lmp.extract_box()
+
+        xlo = boxlo[0]  # type: float
+        xhi = boxhi[0]  # type: float
         print("Box is [%f,%f]." % (xlo, xhi))
 
+        assert xlo is not None
+        assert xhi is not None
         # The position of the interface, at the middle by default (0.5)
         x_interface = (xlo + xhi) * x_interface
 
@@ -83,9 +91,14 @@ class fcCalc:
         # Coordinates ordered by atom ID
         coords_data = self.lmp.gather_atoms("x", 1, 3)
 
+        assert coords_data is not None
+
         # Coordinates in a numpy array
         coords = np.array(coords_data[:], dtype=np.dtype("f8"))
-        self.natoms = self.lmp.extract_global("natoms")
+        self.natoms = self.lmp.get_natoms()  # extract_global("natoms", 0)
+
+        assert self.natoms is not None
+        assert self.natoms > 0
 
         coords = np.reshape(coords, (self.natoms, 3))
 
@@ -119,7 +132,8 @@ class fcCalc:
         :return: None
         """
         lmp = self.lmp
-        natoms = self.natoms
+
+        assert lmp is not None
         inds_left = self.inds_left
         inds_right = self.inds_right
         # One-dimensional indices of the atoms on the right side
@@ -135,10 +149,6 @@ class fcCalc:
             #        for i1 in range(0,10):
             # Index of the atom on the left
             ind1 = inds_left[i1]
-            # Find the indices of atom ind1 in the 1D array
-            indx = 3 * ind1
-            indy = 3 * ind1 + 1
-            indz = 3 * ind1 + 2
             print("\n Moving atom %i/%i. \n" % (i1 + 1, len(inds_left)))
 
             # Move atom to directions x, y, and z
@@ -147,14 +157,24 @@ class fcCalc:
                 index = 3 * ind1 + direction
                 # Get the coordinates from LAMMPS
                 xc = lmp.gather_atoms("x", 1, 3)
+
+                assert xc is not None
+                # print(xc[index])
+
                 # Move the atom
                 xc[index] += hstep
+                # print(xc[index])
+
                 # Communicate to LAMMPS
+                # print("Scattering to", xc)
+                # FIXME This warns of library error, why?
                 lmp.scatter_atoms("x", 1, 3, xc)
+                # assert False
                 # Run LAMMPS to update the forces
                 lmp.command("run 0 post no")
                 # Gather the forces
                 fc1 = lmp.gather_atoms("f", 1, 3)
+                assert fc1 is not None
                 # print "1=",fc1[0]
                 # print type(fc1)
                 fc1 = np.array(fc1, dtype=np.dtype("f8"))
