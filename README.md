@@ -70,6 +70,20 @@ See [here](https://lammps.sandia.gov/doc/Build_package.html) how to include pack
 LAMMPS build.
 - You need to have [numpy](https://docs.scipy.org/doc/numpy/index.html) installed.
 
+## Development
+
+Format files using Black:
+
+```bash
+$ black sdhc example
+```
+
+Check code style with Flake8:
+
+```bash
+$ flake8 .
+```
+
 ## Installation on macOS (2021)
 
 Download the tarball from [LAMMPS downloads](https://www.lammps.org/download.html)
