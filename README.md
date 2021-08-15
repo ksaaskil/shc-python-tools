@@ -30,6 +30,7 @@ $ pip install -e .
 - Simulation uses the `sw` pair style, which is included in the `MANYBODY` package.
 See [here](https://lammps.sandia.gov/doc/Build_package.html) how to include packages in your
 LAMMPS build.
+- **Code has been tested to work with LAMMPS built on July 30th, 2021.**
 
 ## Contents
 
@@ -94,10 +95,10 @@ $ mkdir ~/lammps
 $ cd ~/lammps
 $ wget https://download.lammps.org/tars/lammps.tar.gz
 $ tar -xvf lammps.tar.gz
-$ cd lammps-29Oct20
+$ cd lammps-30Jul2021
 ```
 
-Edit the target `Makefile` such as `src/MAKE/Makefile.serial` to use `clang++`:
+Edit the target `Makefile` such as `src/MAKE/Makefile.serial` to use `clang++` and `C++11`:
 
 ```Makefile
 # Makefile.serial
