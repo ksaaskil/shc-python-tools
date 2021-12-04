@@ -42,7 +42,7 @@ in the [`sdhc`](./sdhc) folder. It contains:
 
 Additionally, the `scripts` folder contains:
 
-- [`compactify_vels.cpp`](./scripts/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `scripts` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable `CC`).
+- [`compactify_vels.cpp`](./scripts/compactify_vels.cpp): C++ script for formatting the LAMMPS's dump velocity file into a more easily readable column file. The program can be compiled by running `make` in `scripts` folder (if `g++` is found, otherwise modify `Makefile` such that appropriate compiler is defined in variable `CC`). Example input and output for the script can be found in [`tests/resources/small.simu.vels.dat`](./tests/resources/small.simu.vels.dat) and [`tests/resources/small.simu.vels.dat.compact`](./tests/resources/small.simu.vels.dat.compact).
 
 In addition, the root directory contains the script [calcSHC.py](./calcSHC.py) demonstrating how the post-processing class is used and how the data could be saved to file.
 
