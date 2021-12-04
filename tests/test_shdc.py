@@ -1,4 +1,7 @@
 from pathlib import Path
+
+import numpy as np
+
 from sdhc.SHCPostProc import SHCPostProc
 
 RESOURCES_PATH = Path("tests") / "resources"
@@ -39,3 +42,12 @@ def test_compute_sdhc():
     postprocessor = compute_sdhc(folder=folder, restart_file=restart_file)
     assert postprocessor.oms_fft is not None
     assert postprocessor.SHC_smooth is not None
+
+    # np.save("omegas.npy", postprocessor.oms_fft)
+    # np.save("current.npy", postprocessor.SHC_smooth)
+
+    expected_angfreqs = np.load(RESOURCES_PATH.joinpath("omegas.npy"))
+    assert np.allclose(postprocessor.oms_fft, expected_angfreqs)
+
+    expected_current = np.load(RESOURCES_PATH.joinpath("current.npy"))
+    assert np.allclose(postprocessor.SHC_smooth, expected_current)
