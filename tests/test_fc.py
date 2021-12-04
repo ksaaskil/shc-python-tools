@@ -4,6 +4,7 @@ import pytest
 import numpy as np
 
 from sdhc.fcCalc import fcCalc
+from tests.utils import np_load
 
 RESOURCES_PATH = Path("tests").joinpath("resources")
 
@@ -29,13 +30,13 @@ def test_fccalc():
 
     # Expected number of atoms on the left interface
     assert len(ids_L) == 60
-    ids_L_expected = np.load(file=RESOURCES_PATH.joinpath("force_constants.ids_L.npy"))
+    ids_L_expected = np_load(file=RESOURCES_PATH.joinpath("force_constants.ids_L.npy"))
     assert np.all(ids_L == ids_L_expected)
 
     # Expected number of atoms on the right interface
     assert len(ids_R) == 63
 
-    ids_R_expected = np.load(file=RESOURCES_PATH.joinpath("force_constants.ids_R.npy"))
+    ids_R_expected = np_load(file=RESOURCES_PATH.joinpath("force_constants.ids_R.npy"))
     assert np.all(ids_R == ids_R_expected)
 
     fc.fcCalc(hstep)
@@ -46,6 +47,6 @@ def test_fccalc():
     assert Kij is not None
     assert Kij.shape == (len(ids_L) * 3, len(ids_R) * 3)
 
-    Kij_expected = np.load(file=RESOURCES_PATH.joinpath("force_constants.Kij.npy"))
+    Kij_expected = np_load(file=RESOURCES_PATH.joinpath("force_constants.Kij.npy"))
 
     assert np.allclose(Kij, Kij_expected)

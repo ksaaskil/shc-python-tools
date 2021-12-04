@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 
 from sdhc.SHCPostProc import SHCPostProc
+from tests.utils import np_load
 
 RESOURCES_PATH = Path("tests") / "resources"
 
@@ -46,8 +47,8 @@ def test_compute_sdhc():
     # np.save("omegas.npy", postprocessor.oms_fft)
     # np.save("current.npy", postprocessor.SHC_smooth)
 
-    expected_angfreqs = np.load(RESOURCES_PATH.joinpath("omegas.npy"))
+    expected_angfreqs = np_load(RESOURCES_PATH.joinpath("omegas.npy"))
     assert np.allclose(postprocessor.oms_fft, expected_angfreqs)
 
-    expected_current = np.load(RESOURCES_PATH.joinpath("current.npy"))
+    expected_current = np_load(RESOURCES_PATH.joinpath("current.npy"))
     assert np.allclose(postprocessor.SHC_smooth, expected_current)
