@@ -16,8 +16,11 @@ def test_fccalc():
     hstep = 0.001
 
     fc = fcCalc(fileprefix=None, restartfile=str(restart_file))
+
+    pair_coeff_file = Path("tests").joinpath("resources").joinpath("Si_vbwm.sw")
+
     ids_L, ids_R = fc.preparelammps(
-        pair_style="sw", pair_coeff="* * Si_vbwm.sw Si", w_interface=3.0
+        pair_style="sw", pair_coeff=f"* * {pair_coeff_file} Si", w_interface=3.0
     )
 
     # Atoms on the left and right interface
@@ -41,7 +44,6 @@ def test_fccalc():
     Kij = fc.Kij
 
     assert Kij is not None
-
     assert Kij.shape == (len(ids_L) * 3, len(ids_R) * 3)
 
     Kij_expected = np.load(file=RESOURCES_PATH.joinpath("force_constants.Kij.npy"))
