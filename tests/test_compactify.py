@@ -2,11 +2,14 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+import pytest
+
 RESOURCES_PATH = Path("tests") / "resources"
 
 VELS_DAT_PATH = RESOURCES_PATH / "small.simu.vels.dat"
 
 
+@pytest.mark.cpp
 def test_compactify():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpd = Path(tmpdir)

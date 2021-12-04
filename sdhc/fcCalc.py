@@ -50,7 +50,7 @@ class fcCalc:
         :type x_interface: float, optional
         :param w_interface: Width of the area of atoms to include in the interface, defaults to 3.0
         :type w_interface: float, optional
-        :return: None
+        :return (ids_L, ids_R): tuple of atom indices on left and right
         """
 
         restartfile = self.restartfile
@@ -125,13 +125,15 @@ class fcCalc:
         self.ids_R = np.in1d(inds_interface, self.inds_right)
         self.ids_R = np.where(self.ids_R)[0]
 
-    def fcCalc(self, hstep):
+        return self.ids_L, self.ids_R
+
+    def fcCalc(self, hstep) -> np.ndarray:
         """
         Compute force constants and store to `self.Kij`.
 
         :param hstep: Step to use in finite differences
         :type hstep: float
-        :return: None
+        :return: Kij: Force constant matrix
         """
         lmp = self.lmp
 
@@ -196,6 +198,7 @@ class fcCalc:
                 lmp.scatter_atoms("x", 1, 3, xc)
 
         self.Kij = Kij
+        return Kij
 
     def writeToFile(self):
         """
