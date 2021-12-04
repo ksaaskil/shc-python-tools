@@ -10,7 +10,7 @@ RESOURCES_PATH = Path("tests").joinpath("resources")
 
 
 @pytest.mark.lammps
-def test_fccalc():
+def test_force_constants():
 
     restart_file = RESOURCES_PATH.joinpath("quenched.restart")
 

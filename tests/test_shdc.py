@@ -14,7 +14,6 @@ def test_compute_sdhc():
         atomic_velocities_file = folder.joinpath("small.simu.vels.dat")
         frequency_window_width = 0.5e12
 
-        backup_prefix = None
         force_constant_file_prefix = folder.joinpath("force_constants")
         unit_scaling_factor = 1.602e-19 / 1e-20 * 1e4
         md_timestep = 2.5e-15
@@ -28,7 +27,7 @@ def test_compute_sdhc():
             widthWin=frequency_window_width,
             NChunks=20,
             chunkSize=50000,
-            backupPrefix=str(backup_prefix),
+            backupPrefix=None,
             LAMMPSRestartFile=str(restart_file),
             reCalcVels=False,
             reCalcFC=False,
