@@ -39,4 +39,6 @@ def test_compute_sdhc():
     folder = RESOURCES_PATH
     restart_file = RESOURCES_PATH.joinpath("quenched.restart")
 
-    compute_sdhc(folder=folder, restart_file=restart_file)
+    postprocessor = compute_sdhc(folder=folder, restart_file=restart_file)
+    assert postprocessor.oms_fft is not None
+    assert postprocessor.SHC_smooth is not None
