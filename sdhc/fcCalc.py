@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Kimmo Sääskilahti, 2015
-from lammps import lammps
 import numpy as np
 
 __all__ = ["fcCalc"]
@@ -52,6 +51,7 @@ class fcCalc:
         :type w_interface: float, optional
         :return (ids_L, ids_R): tuple of atom indices on left and right
         """
+        from lammps import lammps
 
         restartfile = self.restartfile
         self.lmp = lammps()
