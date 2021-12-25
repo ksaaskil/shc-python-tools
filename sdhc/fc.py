@@ -1,11 +1,23 @@
-import logging
 from pathlib import Path
 
 import numpy as np
 
-logging.basicConfig(level=logging.INFO)
+from sdhc.config import logger
 
-logger = logging.getLogger("fc")
+
+def write_force_constants(
+    Kij: np.ndarray, ids_L: np.ndarray, ids_R: np.ndarray, folder: Path
+):
+    np.save(folder.joinpath("force_constants.Kij.npy"), Kij)
+    np.save(folder.joinpath("force_constants.ids_L.npy"), ids_L)
+    np.save(folder.joinpath("force_constants.ids_R.npy"), ids_R)
+
+
+def load_force_constants(folder: Path):
+    Kij = np.load(folder.joinpath("force_constants.Kij.npy"))
+    ids_L = np.load(folder.joinpath("force_constants.ids_L.npy"))
+    ids_R = np.load(folder.joinpath("force_constants.ids_R.npy"))
+    return Kij, ids_L, ids_R
 
 
 def write_to_file(
