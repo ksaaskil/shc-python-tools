@@ -5,9 +5,9 @@ from pathlib import Path
 import shutil
 import subprocess
 
-from sdhc.config import logger
-
 import numpy as np
+
+from sdhc.config import logger
 
 
 def create_compact_vels_file(velocities_file: Path, output_file: Path):
