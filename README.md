@@ -49,28 +49,47 @@ In addition, the root directory contains the script [calcSHC.py](./calcSHC.py) d
 ## Usage
 
 ```python
-from sdhc import SHCPostProc
 import numpy as np
 
+from sdhc import SHCPostProc
+
+# See the accepted arguments in source code
 postprocessor = SHCPostProc(*args, **kwargs)
 postprocessor.postProcess()
 
-# Save frequencies and smoothened spectral heat currents as NumPy files
-np.save('angular_frequencies.npy', postprocessor.oms_fft)
-np.save('heat_currents.npy', postprocessor.SHC_smooth)
+# Angular frequencies
+oms_fft = postprocessor.oms_fft
 
-# Save the frequencies and smoothened spectral heat currents to text file
-np.savetxt('frequencies_and_currents.txt', np.column_stack((oms, postprocessor.SHC_smooth)))
+# Smoothened spectral decomposition of heat current
+SHC_smooth = postprocessor.SHC_smooth
+
+# Save frequencies and smoothened spectral heat currents as NumPy files
+np.save('angular_frequencies.npy', oms_fft)
+np.save('heat_currents.npy', SHC_smooth)
+
+# Save the frequencies and heat currents to CSV file
+np.savetxt(
+    folder.joinpath("SHC.csv"),
+    np.column_stack((oms_fft, SHC_smooth)),
+    delimiter=",",
+)
 ```
 
 ## Example
 
-Folder [example](./example) contains a self-contained example for calculating the spectral heat current flowing across a slab of amorphous Si. The script to be run is called `silicon_example.py`. It performs the following steps:
+Folder [example](./example) contains a self-contained example for calculating the spectral heat current flowing across a slab of amorphous Si. The script to be run is called `silicon_example.py`. Execute as follows:
 
-1. prepares a box of atoms,
-1. call LAMMPS to perform the quenching procedure contained in LAMMPS input file `run_quench.lmp`,
-1. call LAMMPS to perform the actual NEMD calculation for a-Si using `run_simulation.lmp`, and
-1. perform the post-processing using `sdhc`
+```bash
+$ cd example
+$ python silicon_example.py
+```
+
+The script performs the following steps and writes all output by default to folder `lammps-output/`:
+
+1. prepares a box of atoms by writing LAMMPS atom coordinates file `Si.dat`,
+1. calls LAMMPS to perform the quenching procedure contained in LAMMPS input file `quench.lmp`, writing the LAMMPS restart file to `quenched.restart`,
+1. calls LAMMPS to perform the actual NEMD calculation for a-Si using `simulation.lmp` and `quenched.restart`, writing atomic velocities to `simu.vels.dat`, and
+1. performs the post-processing using `sdhc` module
 
 ## Development
 
