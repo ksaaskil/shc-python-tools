@@ -2,8 +2,31 @@
 # Kimmo Sääskilahti, 2021
 from datetime import date
 from pathlib import Path
+import shutil
+import subprocess
+
+from sdhc.config import logger
 
 import numpy as np
+
+
+def create_compact_vels_file(velocities_file: Path, output_file: Path):
+    compactify_vels = shutil.which("compactify_vels")
+
+    if not compactify_vels:
+        raise Exception(
+            "Executable 'compactify_vels' not found. Please see instructions how to create the executable."
+        )
+
+    if not velocities_file.exists():
+        raise FileNotFoundError(velocities_file)
+
+    command = [compactify_vels, str(velocities_file), str(output_file)]
+    logger.info(f"Running command: {' '.join(command)}")
+    result = subprocess.run(command)
+
+    if result.returncode != 0:
+        raise Exception("Failed writing velocities_file")
 
 
 def write_lammps_data_file(
