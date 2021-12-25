@@ -8,12 +8,14 @@ from sdhc.config import logger
 def write_force_constants(
     Kij: np.ndarray, ids_L: np.ndarray, ids_R: np.ndarray, folder: Path
 ):
+    logger.info(f"Writing force constants to: {folder}")
     np.save(folder.joinpath("force_constants.Kij.npy"), Kij)
     np.save(folder.joinpath("force_constants.ids_L.npy"), ids_L)
     np.save(folder.joinpath("force_constants.ids_R.npy"), ids_R)
 
 
 def load_force_constants(folder: Path):
+    logger.info(f"Loading force constants from: {folder}")
     Kij = np.load(folder.joinpath("force_constants.Kij.npy"))
     ids_L = np.load(folder.joinpath("force_constants.ids_L.npy"))
     ids_R = np.load(folder.joinpath("force_constants.ids_R.npy"))
