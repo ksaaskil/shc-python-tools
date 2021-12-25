@@ -7,7 +7,7 @@ __all__ = ["fcCalc"]
 
 class fcCalc:
     """
-    Class for computing force constants between atoms.
+    Legacy class for computing force constants between atoms.
     Uses the `Python library interface <https://lammps.sandia.gov/doc/Python_library.html>`_
     of LAMMPS so you need to have (1) `lammps` in your `PYTHONPATH` and
     (2) `liblammps.so` available for the Python package.
