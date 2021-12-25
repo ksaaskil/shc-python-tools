@@ -134,20 +134,22 @@ def main(folder: Path = Path("lammps-output")):
     atom_positions_file = folder.joinpath("Si.dat")
     write_initial_positions_file(atom_positions_file)
 
-    # Do quenching
+    # Do quenching, writing the LAMMPS restart file to `quenched.restart`
     restart_file = folder.joinpath("quenched.restart")
     do_quench(folder, atom_positions_file, restart_file)
 
-    # Gather data from simulation
+    # Gather data from simulation.
+    # Atomic velocities are written to file `simu.vels.dat`
     do_simulation(folder, restart_file)
 
+    # Calculate force constants and compute the spectral heat current
     postprocessor = compute_sdhc(folder, restart_file)
 
-    # Saving into numpy files
+    # Save angular frequencies and heat currents into numpy files
     np.save(folder.joinpath("oms.npy"), postprocessor.oms_fft)
     np.save(folder.joinpath("SHC.npy"), postprocessor.SHC_smooth)
 
-    # Saving the frequencies and heat currents to CSV file
+    # Save frequencies and heat currents to CSV file
     np.savetxt(
         folder.joinpath("SHC.csv"),
         np.column_stack((postprocessor.oms_fft, postprocessor.SHC_smooth)),
